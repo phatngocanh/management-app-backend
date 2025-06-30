@@ -63,7 +63,7 @@ func (repo *ProductRepository) GetOneByIDQuery(ctx context.Context, id int, tx *
 }
 
 func (repo *ProductRepository) CreateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO products(name, spec, original_price, category_id, unit_id, description) VALUES (:name, :spec, :original_price, :category_id, :unit_id, :description)`
+	insertQuery := `INSERT INTO products(name, cost, category_id, unit_id, description) VALUES (:name, :cost, :category_id, :unit_id, :description)`
 
 	var result sql.Result
 	var err error
@@ -90,7 +90,7 @@ func (repo *ProductRepository) CreateCommand(ctx context.Context, product *entit
 }
 
 func (repo *ProductRepository) UpdateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {
-	updateQuery := `UPDATE products SET name = :name, spec = :spec, original_price = :original_price, category_id = :category_id, unit_id = :unit_id, description = :description WHERE id = :id`
+	updateQuery := `UPDATE products SET name = :name, cost = :cost, category_id = :category_id, unit_id = :unit_id, description = :description WHERE id = :id`
 
 	if tx != nil {
 		_, err := tx.NamedExecContext(ctx, updateQuery, product)

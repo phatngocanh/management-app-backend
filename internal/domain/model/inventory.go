@@ -22,10 +22,9 @@ type InventoryWithProductResponse struct {
 }
 
 type ProductInfo struct {
-	ID            int    `json:"id"`
-	Name          string `json:"name"`
-	Spec          int    `json:"spec"`
-	OriginalPrice int    `json:"original_price"`
+	ID   int     `json:"id"`
+	Name string  `json:"name"`
+	Cost float64 `json:"cost"`
 }
 
 type GetAllInventoryResponse struct {

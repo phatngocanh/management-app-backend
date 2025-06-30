@@ -62,10 +62,9 @@ func (s *InventoryService) GetAll(ctx context.Context) (*model.GetAllInventoryRe
 				Quantity:  inventory.Quantity,
 				Version:   inventory.Version,
 				Product: model.ProductInfo{
-					ID:            inventory.ProductID,
-					Name:          "N/A",
-					Spec:          0,
-					OriginalPrice: 0,
+					ID:   inventory.ProductID,
+					Name: "N/A",
+					Cost: 0,
 				},
 			}
 			continue
@@ -77,10 +76,9 @@ func (s *InventoryService) GetAll(ctx context.Context) (*model.GetAllInventoryRe
 			Quantity:  inventory.Quantity,
 			Version:   inventory.Version,
 			Product: model.ProductInfo{
-				ID:            product.ID,
-				Name:          product.Name,
-				Spec:          product.Spec,
-				OriginalPrice: product.OriginalPrice,
+				ID:   product.ID,
+				Name: product.Name,
+				Cost: product.Cost,
 			},
 		}
 	}

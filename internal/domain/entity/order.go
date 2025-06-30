@@ -9,9 +9,9 @@ type Order struct {
 	DeliveryStatus       string     `db:"delivery_status"`
 	DebtStatus           *string    `db:"debt_status"`
 	StatusTransitionedAt *time.Time `db:"status_transitioned_at"`
-	TotalOriginalCost    int        `db:"total_original_cost"`
-	TotalSalesRevenue    int        `db:"total_sales_revenue"`
-	AdditionalCost       int        `db:"additional_cost"`
+	TotalOriginalCost    float64    `db:"total_original_cost"`
+	TotalSalesRevenue    float64    `db:"total_sales_revenue"`
+	AdditionalCost       float64    `db:"additional_cost"`
 	AdditionalCostNote   *string    `db:"additonal_cost_note"`
 }
 

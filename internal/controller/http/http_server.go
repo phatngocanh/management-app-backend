@@ -19,10 +19,10 @@ type Server struct {
 	authMiddleware          *middleware.AuthMiddleware
 	userHandler             *v1.UserHandler
 	productHandler          *v1.ProductHandler
+	productBomHandler       *v1.ProductBomHandler
 	inventoryHandler        *v1.InventoryHandler
 	inventoryHistoryHandler *v1.InventoryHistoryHandler
 	customerHandler         *v1.CustomerHandler
-	orderHandler            *v1.OrderHandler
 	orderImageHandler       *v1.OrderImageHandler
 	statisticsHandler       *v1.StatisticsHandler
 }
@@ -33,10 +33,10 @@ func NewServer(
 	authMiddleware *middleware.AuthMiddleware,
 	userHandler *v1.UserHandler,
 	productHandler *v1.ProductHandler,
+	productBomHandler *v1.ProductBomHandler,
 	inventoryHandler *v1.InventoryHandler,
 	inventoryHistoryHandler *v1.InventoryHistoryHandler,
 	customerHandler *v1.CustomerHandler,
-	orderHandler *v1.OrderHandler,
 	orderImageHandler *v1.OrderImageHandler,
 	statisticsHandler *v1.StatisticsHandler,
 ) *Server {
@@ -46,10 +46,10 @@ func NewServer(
 		authMiddleware:          authMiddleware,
 		userHandler:             userHandler,
 		productHandler:          productHandler,
+		productBomHandler:       productBomHandler,
 		inventoryHandler:        inventoryHandler,
 		inventoryHistoryHandler: inventoryHistoryHandler,
 		customerHandler:         customerHandler,
-		orderHandler:            orderHandler,
 		orderImageHandler:       orderImageHandler,
 		statisticsHandler:       statisticsHandler,
 	}
@@ -70,10 +70,10 @@ func (s *Server) Run() {
 		s.helloWorldHandler,
 		s.userHandler,
 		s.productHandler,
+		s.productBomHandler,
 		s.inventoryHandler,
 		s.inventoryHistoryHandler,
 		s.customerHandler,
-		s.orderHandler,
 		s.orderImageHandler,
 		s.statisticsHandler,
 		s.authMiddleware,

@@ -43,8 +43,9 @@ type GetOneProductBomResponse struct {
 }
 
 type ProductBomInfo struct {
-	ID            int    `json:"id"`             // ID sản phẩm
-	Name          string `json:"name"`           // Tên sản phẩm
-	Spec          int    `json:"spec"`           // Qui cách
-	OriginalPrice int    `json:"original_price"` // Giá gốc
+	ID           int     `json:"id"`            // ID sản phẩm
+	Name         string  `json:"name"`          // Tên sản phẩm
+	Cost         float64 `json:"cost"`          // Giá vốn
+	UnitCode     string  `json:"unit_code"`     // Mã đơn vị tính (VD: "thung", "cai", "ML")
+	CategoryCode string  `json:"category_code"` // Mã danh mục (VD: "hoa-chat", "nhan")
 }

@@ -12,10 +12,10 @@ func MapRoutes(router *gin.Engine,
 	helloWorldHandler *HelloWorldHandler,
 	userHandler *UserHandler,
 	productHandler *ProductHandler,
+	productBomHandler *ProductBomHandler,
 	inventoryHandler *InventoryHandler,
 	inventoryHistoryHandler *InventoryHistoryHandler,
 	customerHandler *CustomerHandler,
-	orderHandler *OrderHandler,
 	orderImageHandler *OrderImageHandler,
 	statisticsHandler *StatisticsHandler,
 	authMiddleware *middleware.AuthMiddleware,
@@ -47,24 +47,21 @@ func MapRoutes(router *gin.Engine,
 			products.PUT("/:productId/inventories/quantity", authMiddleware.VerifyAccessToken, inventoryHandler.UpdateQuantity)
 			products.GET("/:productId/inventories/histories", authMiddleware.VerifyAccessToken, inventoryHistoryHandler.GetAll)
 		}
+		boms := v1.Group("/boms")
+		{
+			boms.POST("", authMiddleware.VerifyAccessToken, productBomHandler.CreateProductBom)
+			boms.PUT("", authMiddleware.VerifyAccessToken, productBomHandler.UpdateProductBom)
+			boms.GET("", authMiddleware.VerifyAccessToken, productBomHandler.GetAllProductBoms)
+			boms.GET("/parent/:parentProductId", authMiddleware.VerifyAccessToken, productBomHandler.GetProductBomByParentID)
+			boms.GET("/component/:componentProductId", authMiddleware.VerifyAccessToken, productBomHandler.GetProductBomsByComponentID)
+			boms.DELETE("/parent/:parentProductId", authMiddleware.VerifyAccessToken, productBomHandler.DeleteProductBom)
+		}
 		customers := v1.Group("/customers")
 		{
 			customers.POST("", authMiddleware.VerifyAccessToken, customerHandler.Create)
 			customers.PUT("/:customerId", authMiddleware.VerifyAccessToken, customerHandler.Update)
 			customers.GET("", authMiddleware.VerifyAccessToken, customerHandler.GetAll)
 			customers.GET("/:customerId", authMiddleware.VerifyAccessToken, customerHandler.GetOne)
-		}
-		orders := v1.Group("/orders")
-		{
-			orders.POST("", authMiddleware.VerifyAccessToken, orderHandler.Create)
-			orders.PUT("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.Update)
-			orders.GET("", authMiddleware.VerifyAccessToken, orderHandler.GetAll)
-			orders.GET("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.GetOne)
-			orders.DELETE("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.Delete)
-
-			// Order images endpoints
-			orders.POST("/:orderId/images/upload-url", authMiddleware.VerifyAccessToken, orderImageHandler.GenerateSignedUploadURL)
-			orders.DELETE("/:orderId/images/:imageId", authMiddleware.VerifyAccessToken, orderImageHandler.DeleteImage)
 		}
 		inventory := v1.Group("/inventory")
 		{

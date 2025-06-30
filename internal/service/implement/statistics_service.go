@@ -14,20 +14,17 @@ type StatisticsService struct {
 	productRepo   repository.ProductRepository
 	customerRepo  repository.CustomerRepository
 	inventoryRepo repository.InventoryRepository
-	orderRepo     repository.OrderRepository
 }
 
 func NewStatisticsService(
 	productRepo repository.ProductRepository,
 	customerRepo repository.CustomerRepository,
 	inventoryRepo repository.InventoryRepository,
-	orderRepo repository.OrderRepository,
 ) service.StatisticsService {
 	return &StatisticsService{
 		productRepo:   productRepo,
 		customerRepo:  customerRepo,
 		inventoryRepo: inventoryRepo,
-		orderRepo:     orderRepo,
 	}
 }
 
@@ -43,13 +40,6 @@ func (s *StatisticsService) GetDashboardStats(ctx context.Context) (model.Dashbo
 	customers, err := s.customerRepo.GetAllQuery(ctx, nil)
 	if err != nil {
 		log.Error("StatisticsService.GetDashboardStats Error fetching customers: " + err.Error())
-		return model.DashboardStatsResponse{}, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Get total orders
-	orders, err := s.orderRepo.GetAllQuery(ctx, nil)
-	if err != nil {
-		log.Error("StatisticsService.GetDashboardStats Error fetching orders: " + err.Error())
 		return model.DashboardStatsResponse{}, error_utils.ErrorCode.DB_DOWN
 	}
 
@@ -71,20 +61,10 @@ func (s *StatisticsService) GetDashboardStats(ctx context.Context) (model.Dashbo
 		}
 	}
 
-	// Calculate pending orders
-	pendingOrders := 0
-	for _, order := range orders {
-		if order.DeliveryStatus != "COMPLETED" {
-			pendingOrders++
-		}
-	}
-
 	return model.DashboardStatsResponse{
 		TotalProducts:       len(products),
 		TotalCustomers:      len(customers),
 		TotalInventoryItems: totalInventoryItems,
 		LowStockProducts:    lowStockProducts,
-		TotalOrders:         len(orders),
-		PendingOrders:       pendingOrders,
 	}, ""
 }

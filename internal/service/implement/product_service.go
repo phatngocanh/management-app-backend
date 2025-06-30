@@ -14,15 +14,145 @@ import (
 type ProductService struct {
 	productRepository   repository.ProductRepository
 	inventoryRepository repository.InventoryRepository
+	categoryRepository  repository.ProductCategoryRepository
+	unitRepository      repository.UnitOfMeasureRepository
+	bomRepository       repository.ProductBomRepository
 	unitOfWork          repository.UnitOfWork
 }
 
-func NewProductService(productRepository repository.ProductRepository, inventoryRepository repository.InventoryRepository, unitOfWork repository.UnitOfWork) service.ProductService {
+func NewProductService(
+	productRepository repository.ProductRepository,
+	inventoryRepository repository.InventoryRepository,
+	categoryRepository repository.ProductCategoryRepository,
+	unitRepository repository.UnitOfMeasureRepository,
+	bomRepository repository.ProductBomRepository,
+	unitOfWork repository.UnitOfWork,
+) service.ProductService {
 	return &ProductService{
 		productRepository:   productRepository,
 		inventoryRepository: inventoryRepository,
+		categoryRepository:  categoryRepository,
+		unitRepository:      unitRepository,
+		bomRepository:       bomRepository,
 		unitOfWork:          unitOfWork,
 	}
+}
+
+// Helper function to build complete ProductResponse with all related information
+func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.Product) (*model.ProductResponse, string) {
+	response := &model.ProductResponse{
+		ID:          product.ID,
+		Name:        product.Name,
+		Cost:        product.Cost,
+		CategoryID:  product.CategoryID,
+		UnitID:      product.UnitID,
+		Description: product.Description,
+	}
+
+	// Get inventory info
+	inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
+	if err == nil && inventory != nil {
+		response.Inventory = &model.InventoryInfo{
+			Quantity: inventory.Quantity,
+			Version:  inventory.Version,
+		}
+	}
+
+	// Get category info
+	if product.CategoryID != nil {
+		category, err := s.categoryRepository.GetOneByIDQuery(ctx, *product.CategoryID, nil)
+		if err == nil && category != nil {
+			response.Category = &model.ProductCategoryResponse{
+				ID:          category.ID,
+				Name:        category.Name,
+				Code:        category.Code,
+				Description: category.Description,
+			}
+		}
+	}
+
+	// Get unit info
+	if product.UnitID != nil {
+		unit, err := s.unitRepository.GetOneByIDQuery(ctx, *product.UnitID, nil)
+		if err == nil && unit != nil {
+			response.Unit = &model.UnitOfMeasureResponse{
+				ID:          unit.ID,
+				Name:        unit.Name,
+				Code:        unit.Code,
+				Description: unit.Description,
+			}
+		}
+	}
+
+	// Get BOM info (if this product can be built from other products)
+	bomEntries, err := s.bomRepository.GetByParentProductIDQuery(ctx, product.ID, nil)
+	if err == nil && len(bomEntries) > 0 {
+		bomComponents := make([]model.BomComponentResponse, len(bomEntries))
+		for i, bomEntry := range bomEntries {
+			// Get component product info
+			componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bomEntry.ComponentProductID, nil)
+
+			bomComponents[i] = model.BomComponentResponse{
+				ID:                 bomEntry.ID,
+				ComponentProductID: bomEntry.ComponentProductID,
+				Quantity:           bomEntry.Quantity,
+			}
+
+			if componentProduct != nil {
+				// Get unit and category info for component
+				unitCode := ""
+				categoryCode := ""
+
+				if componentProduct.UnitID != nil {
+					unit, _ := s.unitRepository.GetOneByIDQuery(ctx, *componentProduct.UnitID, nil)
+					if unit != nil {
+						unitCode = unit.Code
+					}
+				}
+
+				if componentProduct.CategoryID != nil {
+					category, _ := s.categoryRepository.GetOneByIDQuery(ctx, *componentProduct.CategoryID, nil)
+					if category != nil {
+						categoryCode = category.Code
+					}
+				}
+
+				bomComponents[i].ComponentProduct = &model.ProductBomInfo{
+					ID:           componentProduct.ID,
+					Name:         componentProduct.Name,
+					Cost:         componentProduct.Cost,
+					UnitCode:     unitCode,
+					CategoryCode: categoryCode,
+				}
+			}
+		}
+
+		response.BOM = &model.ProductBOMInfo{
+			TotalComponents: len(bomComponents),
+			Components:      bomComponents,
+		}
+	}
+
+	// Get usage info (where this product is used as component)
+	usageEntries, err := s.bomRepository.GetByComponentProductIDQuery(ctx, product.ID, nil)
+	if err == nil && len(usageEntries) > 0 {
+		usageInfo := make([]model.ProductBOMUsage, len(usageEntries))
+		for i, usageEntry := range usageEntries {
+			parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, usageEntry.ParentProductID, nil)
+
+			usageInfo[i] = model.ProductBOMUsage{
+				ParentProductID: usageEntry.ParentProductID,
+				Quantity:        usageEntry.Quantity,
+			}
+
+			if parentProduct != nil {
+				usageInfo[i].ParentProductName = parentProduct.Name
+			}
+		}
+		response.UsedInBOMs = usageInfo
+	}
+
+	return response, ""
 }
 
 func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductRequest) (*model.ProductResponse, string) {
@@ -44,12 +174,11 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 
 	// Create product entity
 	product := &entity.Product{
-		Name:          request.Name,
-		Spec:          request.Spec,
-		OriginalPrice: request.OriginalPrice,
-		CategoryID:    request.CategoryID,
-		UnitID:        request.UnitID,
-		Description:   request.Description,
+		Name:        request.Name,
+		Cost:        request.Cost,
+		CategoryID:  request.CategoryID,
+		UnitID:      request.UnitID,
+		Description: request.Description,
 	}
 
 	// Save product to database
@@ -79,20 +208,12 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Return response with inventory info
-	return &model.ProductResponse{
-		ID:            product.ID,
-		Name:          product.Name,
-		Spec:          product.Spec,
-		OriginalPrice: product.OriginalPrice,
-		CategoryID:    product.CategoryID,
-		UnitID:        product.UnitID,
-		Description:   product.Description,
-		Inventory: &model.InventoryInfo{
-			Quantity: inventory.Quantity,
-			Version:  inventory.Version,
-		},
-	}, ""
+	// Return complete response with all related info
+	response, errCode := s.buildProductResponse(ctx, product)
+	if errCode != "" {
+		return nil, errCode
+	}
+	return response, ""
 }
 
 func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductRequest) (*model.ProductResponse, string) {
@@ -109,13 +230,12 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 
 	// Update product entity
 	product := &entity.Product{
-		ID:            request.ID,
-		Name:          request.Name,
-		Spec:          request.Spec,
-		OriginalPrice: request.OriginalPrice,
-		CategoryID:    request.CategoryID,
-		UnitID:        request.UnitID,
-		Description:   request.Description,
+		ID:          request.ID,
+		Name:        request.Name,
+		Cost:        request.Cost,
+		CategoryID:  request.CategoryID,
+		UnitID:      request.UnitID,
+		Description: request.Description,
 	}
 
 	// Save to database
@@ -125,36 +245,12 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Get inventory info for response
-	inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
-	if err != nil {
-		log.Error("ProductService.Update Error when get inventory: " + err.Error())
-		// Don't fail the update, just return without inventory info
-		return &model.ProductResponse{
-			ID:            product.ID,
-			Name:          product.Name,
-			Spec:          product.Spec,
-			OriginalPrice: product.OriginalPrice,
-			CategoryID:    product.CategoryID,
-			UnitID:        product.UnitID,
-			Description:   product.Description,
-		}, ""
+	// Return complete response with all related info
+	response, errCode := s.buildProductResponse(ctx, product)
+	if errCode != "" {
+		return nil, errCode
 	}
-
-	// Return response with inventory info
-	return &model.ProductResponse{
-		ID:            product.ID,
-		Name:          product.Name,
-		Spec:          product.Spec,
-		OriginalPrice: product.OriginalPrice,
-		CategoryID:    product.CategoryID,
-		UnitID:        product.UnitID,
-		Description:   product.Description,
-		Inventory: &model.InventoryInfo{
-			Quantity: inventory.Quantity,
-			Version:  inventory.Version,
-		},
-	}, ""
+	return response, ""
 }
 
 func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse, string) {
@@ -165,39 +261,24 @@ func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Convert to response models with inventory info
+	// Convert to response models with complete info
 	productResponses := make([]model.ProductResponse, len(products))
 	for i, product := range products {
-		// Get inventory for this product
-		inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
-		if err != nil {
-			log.Error("ProductService.GetAll Error when get inventory for product " + string(rune(product.ID)) + ": " + err.Error())
-			// Continue without inventory info for this product
+		response, errCode := s.buildProductResponse(ctx, &product)
+		if errCode != "" {
+			log.Error("ProductService.GetAll Error when build product response for product " + string(rune(product.ID)) + ": " + errCode)
+			// Continue with basic info if detailed info fails
 			productResponses[i] = model.ProductResponse{
-				ID:            product.ID,
-				Name:          product.Name,
-				Spec:          product.Spec,
-				OriginalPrice: product.OriginalPrice,
-				CategoryID:    product.CategoryID,
-				UnitID:        product.UnitID,
-				Description:   product.Description,
+				ID:          product.ID,
+				Name:        product.Name,
+				Cost:        product.Cost,
+				CategoryID:  product.CategoryID,
+				UnitID:      product.UnitID,
+				Description: product.Description,
 			}
 			continue
 		}
-
-		productResponses[i] = model.ProductResponse{
-			ID:            product.ID,
-			Name:          product.Name,
-			Spec:          product.Spec,
-			OriginalPrice: product.OriginalPrice,
-			CategoryID:    product.CategoryID,
-			UnitID:        product.UnitID,
-			Description:   product.Description,
-			Inventory: &model.InventoryInfo{
-				Quantity: inventory.Quantity,
-				Version:  inventory.Version,
-			},
-		}
+		productResponses[i] = *response
 	}
 
 	return &model.GetAllProductsResponse{
@@ -217,38 +298,13 @@ func (s *ProductService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductR
 		return nil, error_utils.ErrorCode.NOT_FOUND
 	}
 
-	// Get inventory for this product
-	inventory, err := s.inventoryRepository.GetOneByProductIDQuery(ctx, product.ID, nil)
-	if err != nil {
-		log.Error("ProductService.GetOne Error when get inventory: " + err.Error())
-		// Return product without inventory info
-		return &model.GetOneProductResponse{
-			Product: model.ProductResponse{
-				ID:            product.ID,
-				Name:          product.Name,
-				Spec:          product.Spec,
-				OriginalPrice: product.OriginalPrice,
-				CategoryID:    product.CategoryID,
-				UnitID:        product.UnitID,
-				Description:   product.Description,
-			},
-		}, ""
+	// Return complete response with all related info
+	response, errCode := s.buildProductResponse(ctx, product)
+	if errCode != "" {
+		return nil, errCode
 	}
 
-	// Return response with inventory info
 	return &model.GetOneProductResponse{
-		Product: model.ProductResponse{
-			ID:            product.ID,
-			Name:          product.Name,
-			Spec:          product.Spec,
-			OriginalPrice: product.OriginalPrice,
-			CategoryID:    product.CategoryID,
-			UnitID:        product.UnitID,
-			Description:   product.Description,
-			Inventory: &model.InventoryInfo{
-				Quantity: inventory.Quantity,
-				Version:  inventory.Version,
-			},
-		},
+		Product: *response,
 	}, ""
 }

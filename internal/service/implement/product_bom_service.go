@@ -11,16 +11,60 @@ import (
 )
 
 type ProductBomService struct {
-	bomRepository     repository.ProductBomRepository
-	productRepository repository.ProductRepository
-	unitOfWork        repository.UnitOfWork
+	bomRepository      repository.ProductBomRepository
+	productRepository  repository.ProductRepository
+	categoryRepository repository.ProductCategoryRepository
+	unitRepository     repository.UnitOfMeasureRepository
+	unitOfWork         repository.UnitOfWork
 }
 
-func NewProductBomService(bomRepository repository.ProductBomRepository, productRepository repository.ProductRepository, unitOfWork repository.UnitOfWork) service.ProductBomService {
+func NewProductBomService(
+	bomRepository repository.ProductBomRepository,
+	productRepository repository.ProductRepository,
+	categoryRepository repository.ProductCategoryRepository,
+	unitRepository repository.UnitOfMeasureRepository,
+	unitOfWork repository.UnitOfWork,
+) service.ProductBomService {
 	return &ProductBomService{
-		bomRepository:     bomRepository,
-		productRepository: productRepository,
-		unitOfWork:        unitOfWork,
+		bomRepository:      bomRepository,
+		productRepository:  productRepository,
+		categoryRepository: categoryRepository,
+		unitRepository:     unitRepository,
+		unitOfWork:         unitOfWork,
+	}
+}
+
+// Helper function to create ProductBomInfo with unit and category codes
+func (s *ProductBomService) buildProductBomInfo(ctx *gin.Context, product *entity.Product) *model.ProductBomInfo {
+	if product == nil {
+		return nil
+	}
+
+	unitCode := ""
+	categoryCode := ""
+
+	// Get unit code
+	if product.UnitID != nil {
+		unit, err := s.unitRepository.GetOneByIDQuery(ctx, *product.UnitID, nil)
+		if err == nil && unit != nil {
+			unitCode = unit.Code
+		}
+	}
+
+	// Get category code
+	if product.CategoryID != nil {
+		category, err := s.categoryRepository.GetOneByIDQuery(ctx, *product.CategoryID, nil)
+		if err == nil && category != nil {
+			categoryCode = category.Code
+		}
+	}
+
+	return &model.ProductBomInfo{
+		ID:           product.ID,
+		Name:         product.Name,
+		Cost:         product.Cost,
+		UnitCode:     unitCode,
+		CategoryCode: categoryCode,
 	}
 }
 
@@ -78,12 +122,7 @@ func (s *ProductBomService) Create(ctx *gin.Context, request model.CreateProduct
 		}
 
 		if componentProduct != nil {
-			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
-				ID:            componentProduct.ID,
-				Name:          componentProduct.Name,
-				Spec:          componentProduct.Spec,
-				OriginalPrice: componentProduct.OriginalPrice,
-			}
+			bomComponents[i].ComponentProduct = s.buildProductBomInfo(ctx, componentProduct)
 		}
 	}
 
@@ -102,12 +141,7 @@ func (s *ProductBomService) Create(ctx *gin.Context, request model.CreateProduct
 	}
 
 	if parentProduct != nil {
-		response.ParentProduct = &model.ProductBomInfo{
-			ID:            parentProduct.ID,
-			Name:          parentProduct.Name,
-			Spec:          parentProduct.Spec,
-			OriginalPrice: parentProduct.OriginalPrice,
-		}
+		response.ParentProduct = s.buildProductBomInfo(ctx, parentProduct)
 	}
 
 	return response, ""
@@ -182,12 +216,7 @@ func (s *ProductBomService) Update(ctx *gin.Context, request model.UpdateProduct
 		}
 
 		if componentProduct != nil {
-			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
-				ID:            componentProduct.ID,
-				Name:          componentProduct.Name,
-				Spec:          componentProduct.Spec,
-				OriginalPrice: componentProduct.OriginalPrice,
-			}
+			bomComponents[i].ComponentProduct = s.buildProductBomInfo(ctx, componentProduct)
 		}
 	}
 
@@ -206,12 +235,7 @@ func (s *ProductBomService) Update(ctx *gin.Context, request model.UpdateProduct
 	}
 
 	if parentProduct != nil {
-		response.ParentProduct = &model.ProductBomInfo{
-			ID:            parentProduct.ID,
-			Name:          parentProduct.Name,
-			Spec:          parentProduct.Spec,
-			OriginalPrice: parentProduct.OriginalPrice,
-		}
+		response.ParentProduct = s.buildProductBomInfo(ctx, parentProduct)
 	}
 
 	return response, ""
@@ -250,12 +274,7 @@ func (s *ProductBomService) GetAll(ctx *gin.Context) (*model.GetAllProductBomsRe
 			}
 
 			if componentProduct != nil {
-				bomComponents[i].ComponentProduct = &model.ProductBomInfo{
-					ID:            componentProduct.ID,
-					Name:          componentProduct.Name,
-					Spec:          componentProduct.Spec,
-					OriginalPrice: componentProduct.OriginalPrice,
-				}
+				bomComponents[i].ComponentProduct = s.buildProductBomInfo(ctx, componentProduct)
 			}
 		}
 
@@ -266,12 +285,7 @@ func (s *ProductBomService) GetAll(ctx *gin.Context) (*model.GetAllProductBomsRe
 		}
 
 		if parentProduct != nil {
-			bomResponse.ParentProduct = &model.ProductBomInfo{
-				ID:            parentProduct.ID,
-				Name:          parentProduct.Name,
-				Spec:          parentProduct.Spec,
-				OriginalPrice: parentProduct.OriginalPrice,
-			}
+			bomResponse.ParentProduct = s.buildProductBomInfo(ctx, parentProduct)
 		}
 
 		bomResponses = append(bomResponses, bomResponse)
@@ -314,12 +328,7 @@ func (s *ProductBomService) GetByParentProductID(ctx *gin.Context, parentProduct
 		}
 
 		if componentProduct != nil {
-			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
-				ID:            componentProduct.ID,
-				Name:          componentProduct.Name,
-				Spec:          componentProduct.Spec,
-				OriginalPrice: componentProduct.OriginalPrice,
-			}
+			bomComponents[i].ComponentProduct = s.buildProductBomInfo(ctx, componentProduct)
 		}
 	}
 
@@ -330,12 +339,7 @@ func (s *ProductBomService) GetByParentProductID(ctx *gin.Context, parentProduct
 	}
 
 	if parentProduct != nil {
-		response.ParentProduct = &model.ProductBomInfo{
-			ID:            parentProduct.ID,
-			Name:          parentProduct.Name,
-			Spec:          parentProduct.Spec,
-			OriginalPrice: parentProduct.OriginalPrice,
-		}
+		response.ParentProduct = s.buildProductBomInfo(ctx, parentProduct)
 	}
 
 	return &model.GetOneProductBomResponse{

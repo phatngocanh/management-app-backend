@@ -1,0 +1,2 @@
+-- Rename original_price to cost and change to decimal type in products table
+ALTER TABLE products CHANGE COLUMN original_price cost DECIMAL(10,3) NOT NULL DEFAULT 0.00 COMMENT 'Giá vốn của sản phẩm (VND)'; 
