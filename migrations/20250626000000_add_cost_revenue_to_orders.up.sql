@@ -1,0 +1,2 @@
+ALTER TABLE orders ADD COLUMN cost DECIMAL(15,2) DEFAULT 0.00 COMMENT 'Chi phí đơn hàng (VND)';
+ALTER TABLE orders ADD COLUMN revenue DECIMAL(15,2) DEFAULT 0.00 COMMENT 'Doanh thu đơn hàng (VND)'; 
