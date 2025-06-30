@@ -2,7 +2,6 @@ package v1
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
@@ -69,27 +68,26 @@ func (h *InventoryReceiptHandler) GetAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(response))
 }
 
-// @Summary Get Inventory Receipt by ID
-// @Description Retrieve an inventory receipt by its ID with all related items
+// @Summary Get Inventory Receipt by Code
+// @Description Retrieve an inventory receipt by its code with all related items
 // @Tags Inventory Receipts
 // @Produce json
 // @Param  Authorization header string true "Authorization: Bearer"
-// @Param id path int true "Inventory Receipt ID"
+// @Param code path string true "Inventory Receipt Code"
 // @Success 200 {object} httpcommon.HttpResponse[model.GetOneInventoryReceiptResponse]
 // @Failure 400 {object} httpcommon.HttpResponse[any]
 // @Failure 404 {object} httpcommon.HttpResponse[any]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
-// @Router /inventory-receipts/{receiptId} [get]
+// @Router /inventory-receipts/{receiptCode} [get]
 func (h *InventoryReceiptHandler) GetOne(ctx *gin.Context) {
-	idStr := ctx.Param("receiptId")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "receiptId")
+	code := ctx.Param("receiptCode")
+	if code == "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "receiptCode")
 		ctx.JSON(statusCode, errResponse)
 		return
 	}
 
-	response, errCode := h.inventoryReceiptService.GetOne(ctx, id)
+	response, errCode := h.inventoryReceiptService.GetByCode(ctx, code)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

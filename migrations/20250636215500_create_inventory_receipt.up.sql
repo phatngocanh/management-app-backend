@@ -1,5 +1,6 @@
-CREATE TABLE inventory_receipt (
+CREATE TABLE inventory_receipts (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10) NOT NULL UNIQUE,
     user_id INT NOT NULL,
     receipt_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
@@ -7,4 +8,4 @@ CREATE TABLE inventory_receipt (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
-);
+); 

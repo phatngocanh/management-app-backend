@@ -291,3 +291,53 @@ func (s *InventoryReceiptService) GetOne(ctx *gin.Context, id int) (*model.GetOn
 		},
 	}, ""
 }
+
+func (s *InventoryReceiptService) GetByCode(ctx *gin.Context, code string) (*model.GetOneInventoryReceiptResponse, string) {
+	// Get inventory receipt by code
+	receipt, err := s.inventoryReceiptRepository.GetOneByCodeQuery(ctx, code, nil)
+	if err != nil {
+		log.Error("InventoryReceiptService.GetByCode Error when get receipt: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	if receipt == nil {
+		return nil, error_utils.ErrorCode.NOT_FOUND
+	}
+
+	// Get receipt items
+	receiptItems, err := s.inventoryReceiptItemRepository.GetByInventoryReceiptIDQuery(ctx, receipt.ID, nil)
+	if err != nil {
+		log.Error("InventoryReceiptService.GetByCode Error when get receipt items: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Convert items to response models
+	itemResponses := make([]model.InventoryReceiptItemResponse, len(receiptItems))
+	for i, item := range receiptItems {
+		itemResponses[i] = model.InventoryReceiptItemResponse{
+			ID:                 item.ID,
+			InventoryReceiptID: item.InventoryReceiptID,
+			ProductID:          item.ProductID,
+			Quantity:           item.Quantity,
+			UnitCost:           item.UnitCost,
+			Notes:              item.Notes,
+			CreatedAt:          item.CreatedAt,
+			UpdatedAt:          item.UpdatedAt,
+		}
+	}
+
+	// Return response with items
+	return &model.GetOneInventoryReceiptResponse{
+		InventoryReceipt: model.InventoryReceiptResponse{
+			ID:          receipt.ID,
+			Code:        receipt.Code,
+			UserID:      receipt.UserID,
+			ReceiptDate: receipt.ReceiptDate,
+			Notes:       receipt.Notes,
+			TotalItems:  receipt.TotalItems,
+			CreatedAt:   receipt.CreatedAt,
+			UpdatedAt:   receipt.UpdatedAt,
+			Items:       itemResponses,
+		},
+	}, ""
+}

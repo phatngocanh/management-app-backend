@@ -9,4 +9,5 @@ type InventoryReceiptService interface {
 	Create(ctx *gin.Context, request model.CreateInventoryReceiptRequest) (*model.InventoryReceiptResponse, string)
 	GetAll(ctx *gin.Context) (*model.GetAllInventoryReceiptsResponse, string)
 	GetOne(ctx *gin.Context, id int) (*model.GetOneInventoryReceiptResponse, string)
+	GetByCode(ctx *gin.Context, code string) (*model.GetOneInventoryReceiptResponse, string)
 }

@@ -90,7 +90,7 @@ func MapRoutes(router *gin.Engine,
 		{
 			inventoryReceipts.POST("", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.Create)
 			inventoryReceipts.GET("", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.GetAll)
-			inventoryReceipts.GET("/:receiptId", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.GetOne)
+			inventoryReceipts.GET("/:receiptCode", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.GetOne)
 		}
 		statistics := v1.Group("/statistics")
 		{

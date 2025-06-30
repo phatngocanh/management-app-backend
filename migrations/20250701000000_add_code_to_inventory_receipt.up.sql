@@ -1,2 +1,0 @@
-ALTER TABLE inventory_receipt 
-ADD COLUMN code VARCHAR(10) NOT NULL UNIQUE; 

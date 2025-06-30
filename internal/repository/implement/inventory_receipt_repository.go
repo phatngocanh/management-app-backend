@@ -22,7 +22,7 @@ func NewInventoryReceiptRepository(db database.Db) repository.InventoryReceiptRe
 
 func (repo *InventoryReceiptRepository) CreateCommand(ctx context.Context, receipt *entity.InventoryReceipt, tx *sqlx.Tx) error {
 	// First insert without code (code will be generated after getting ID)
-	insertQuery := `INSERT INTO inventory_receipt(code, user_id, receipt_date, notes, total_items) 
+	insertQuery := `INSERT INTO inventory_receipts(code, user_id, receipt_date, notes, total_items) 
 					VALUES ('TEMP', :user_id, :receipt_date, :notes, :total_items)`
 
 	var result sql.Result
@@ -50,7 +50,7 @@ func (repo *InventoryReceiptRepository) CreateCommand(ctx context.Context, recei
 	receipt.Code = code
 
 	// Update the record with the generated code
-	updateCodeQuery := `UPDATE inventory_receipt SET code = ? WHERE id = ?`
+	updateCodeQuery := `UPDATE inventory_receipts SET code = ? WHERE id = ?`
 
 	if tx != nil {
 		_, err = tx.ExecContext(ctx, updateCodeQuery, code, receipt.ID)
@@ -63,7 +63,7 @@ func (repo *InventoryReceiptRepository) CreateCommand(ctx context.Context, recei
 
 func (repo *InventoryReceiptRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.InventoryReceipt, error) {
 	var receipts []entity.InventoryReceipt
-	query := "SELECT * FROM inventory_receipt ORDER BY created_at DESC"
+	query := "SELECT * FROM inventory_receipts ORDER BY created_at DESC"
 	var err error
 
 	if tx != nil {
@@ -81,7 +81,7 @@ func (repo *InventoryReceiptRepository) GetAllQuery(ctx context.Context, tx *sql
 
 func (repo *InventoryReceiptRepository) GetOneByIDQuery(ctx context.Context, id int, tx *sqlx.Tx) (*entity.InventoryReceipt, error) {
 	var receipt entity.InventoryReceipt
-	query := "SELECT * FROM inventory_receipt WHERE id = ?"
+	query := "SELECT * FROM inventory_receipts WHERE id = ?"
 	var err error
 
 	if tx != nil {
@@ -100,9 +100,30 @@ func (repo *InventoryReceiptRepository) GetOneByIDQuery(ctx context.Context, id 
 	return &receipt, nil
 }
 
+func (repo *InventoryReceiptRepository) GetOneByCodeQuery(ctx context.Context, code string, tx *sqlx.Tx) (*entity.InventoryReceipt, error) {
+	var receipt entity.InventoryReceipt
+	query := "SELECT * FROM inventory_receipts WHERE code = ?"
+	var err error
+
+	if tx != nil {
+		err = tx.GetContext(ctx, &receipt, query, code)
+	} else {
+		err = repo.db.GetContext(ctx, &receipt, query, code)
+	}
+
+	if err != nil {
+		if err.Error() == error_utils.SystemErrorMessage.SqlxNoRow {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &receipt, nil
+}
+
 func (repo *InventoryReceiptRepository) GetByUserIDQuery(ctx context.Context, userID int, tx *sqlx.Tx) ([]entity.InventoryReceipt, error) {
 	var receipts []entity.InventoryReceipt
-	query := "SELECT * FROM inventory_receipt WHERE user_id = ? ORDER BY created_at DESC"
+	query := "SELECT * FROM inventory_receipts WHERE user_id = ? ORDER BY created_at DESC"
 	var err error
 
 	if tx != nil {
@@ -119,7 +140,7 @@ func (repo *InventoryReceiptRepository) GetByUserIDQuery(ctx context.Context, us
 }
 
 func (repo *InventoryReceiptRepository) UpdateCommand(ctx context.Context, receipt *entity.InventoryReceipt, tx *sqlx.Tx) error {
-	updateQuery := `UPDATE inventory_receipt SET code = :code, user_id = :user_id, receipt_date = :receipt_date, 
+	updateQuery := `UPDATE inventory_receipts SET code = :code, user_id = :user_id, receipt_date = :receipt_date, 
 					notes = :notes, total_items = :total_items WHERE id = :id`
 
 	if tx != nil {
@@ -132,7 +153,7 @@ func (repo *InventoryReceiptRepository) UpdateCommand(ctx context.Context, recei
 }
 
 func (repo *InventoryReceiptRepository) DeleteCommand(ctx context.Context, id int, tx *sqlx.Tx) error {
-	deleteQuery := "DELETE FROM inventory_receipt WHERE id = ?"
+	deleteQuery := "DELETE FROM inventory_receipts WHERE id = ?"
 	var err error
 
 	if tx != nil {
