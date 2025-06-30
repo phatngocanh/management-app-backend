@@ -152,3 +152,32 @@ func (s *S3Service) GenerateSignedDownloadURL(ctx context.Context, s3Key string,
 
 	return request.URL, nil
 }
+
+func (s *S3Service) GenerateSignedUploadURLWithPrefix(ctx context.Context, fileName string, contentType string, prefix string) (string, string, error) {
+	if !s.enabled {
+		return "", "", fmt.Errorf("S3 service is not enabled - check AWS configuration")
+	}
+
+	// Generate unique filename with timestamp
+	timestamp := time.Now().Unix()
+	ext := filepath.Ext(fileName)
+	uniqueFileName := fmt.Sprintf("%s%d%s", filepath.Base(fileName[:len(fileName)-len(ext)]), timestamp, ext)
+
+	// Create the full key (path) for the file with custom prefix
+	key := prefix + uniqueFileName
+
+	// Generate presigned URL for PUT operation
+	presignClient := s3.NewPresignClient(s.s3Client)
+
+	request, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucketName),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+	}, s3.WithPresignExpires(2*time.Minute)) // URL expires in 2 minutes
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate presigned upload URL: %w", err)
+	}
+
+	return request.URL, key, nil
+}

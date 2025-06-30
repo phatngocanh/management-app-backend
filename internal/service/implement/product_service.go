@@ -47,6 +47,9 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		Name:          request.Name,
 		Spec:          request.Spec,
 		OriginalPrice: request.OriginalPrice,
+		CategoryID:    request.CategoryID,
+		UnitID:        request.UnitID,
+		Description:   request.Description,
 	}
 
 	// Save product to database
@@ -82,6 +85,9 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 		Name:          product.Name,
 		Spec:          product.Spec,
 		OriginalPrice: product.OriginalPrice,
+		CategoryID:    product.CategoryID,
+		UnitID:        product.UnitID,
+		Description:   product.Description,
 		Inventory: &model.InventoryInfo{
 			Quantity: inventory.Quantity,
 			Version:  inventory.Version,
@@ -107,6 +113,9 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		Name:          request.Name,
 		Spec:          request.Spec,
 		OriginalPrice: request.OriginalPrice,
+		CategoryID:    request.CategoryID,
+		UnitID:        request.UnitID,
+		Description:   request.Description,
 	}
 
 	// Save to database
@@ -126,6 +135,9 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 			Name:          product.Name,
 			Spec:          product.Spec,
 			OriginalPrice: product.OriginalPrice,
+			CategoryID:    product.CategoryID,
+			UnitID:        product.UnitID,
+			Description:   product.Description,
 		}, ""
 	}
 
@@ -135,6 +147,9 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 		Name:          product.Name,
 		Spec:          product.Spec,
 		OriginalPrice: product.OriginalPrice,
+		CategoryID:    product.CategoryID,
+		UnitID:        product.UnitID,
+		Description:   product.Description,
 		Inventory: &model.InventoryInfo{
 			Quantity: inventory.Quantity,
 			Version:  inventory.Version,
@@ -163,6 +178,9 @@ func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse
 				Name:          product.Name,
 				Spec:          product.Spec,
 				OriginalPrice: product.OriginalPrice,
+				CategoryID:    product.CategoryID,
+				UnitID:        product.UnitID,
+				Description:   product.Description,
 			}
 			continue
 		}
@@ -172,6 +190,9 @@ func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse
 			Name:          product.Name,
 			Spec:          product.Spec,
 			OriginalPrice: product.OriginalPrice,
+			CategoryID:    product.CategoryID,
+			UnitID:        product.UnitID,
+			Description:   product.Description,
 			Inventory: &model.InventoryInfo{
 				Quantity: inventory.Quantity,
 				Version:  inventory.Version,
@@ -207,6 +228,9 @@ func (s *ProductService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductR
 				Name:          product.Name,
 				Spec:          product.Spec,
 				OriginalPrice: product.OriginalPrice,
+				CategoryID:    product.CategoryID,
+				UnitID:        product.UnitID,
+				Description:   product.Description,
 			},
 		}, ""
 	}
@@ -218,6 +242,9 @@ func (s *ProductService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductR
 			Name:          product.Name,
 			Spec:          product.Spec,
 			OriginalPrice: product.OriginalPrice,
+			CategoryID:    product.CategoryID,
+			UnitID:        product.UnitID,
+			Description:   product.Description,
 			Inventory: &model.InventoryInfo{
 				Quantity: inventory.Quantity,
 				Version:  inventory.Version,
