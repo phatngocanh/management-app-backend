@@ -18,7 +18,6 @@ func MapRoutes(router *gin.Engine,
 	inventoryHandler *InventoryHandler,
 	inventoryHistoryHandler *InventoryHistoryHandler,
 	customerHandler *CustomerHandler,
-	orderImageHandler *OrderImageHandler,
 	statisticsHandler *StatisticsHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {

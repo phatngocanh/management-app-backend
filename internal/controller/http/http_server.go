@@ -41,7 +41,6 @@ func NewServer(
 	inventoryHandler *v1.InventoryHandler,
 	inventoryHistoryHandler *v1.InventoryHistoryHandler,
 	customerHandler *v1.CustomerHandler,
-	orderImageHandler *v1.OrderImageHandler,
 	statisticsHandler *v1.StatisticsHandler,
 ) *Server {
 	return &Server{
@@ -56,7 +55,6 @@ func NewServer(
 		inventoryHandler:        inventoryHandler,
 		inventoryHistoryHandler: inventoryHistoryHandler,
 		customerHandler:         customerHandler,
-		orderImageHandler:       orderImageHandler,
 		statisticsHandler:       statisticsHandler,
 	}
 }
@@ -82,7 +80,6 @@ func (s *Server) Run() {
 		s.inventoryHandler,
 		s.inventoryHistoryHandler,
 		s.customerHandler,
-		s.orderImageHandler,
 		s.statisticsHandler,
 		s.authMiddleware,
 	)
