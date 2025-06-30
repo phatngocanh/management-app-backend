@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pna/order-app-backend/internal/bean"
+	"github.com/pna/management-app-backend/internal/bean"
 	log "github.com/sirupsen/logrus"
 )
 

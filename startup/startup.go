@@ -4,9 +4,9 @@ import (
 	"os"
 
 	"github.com/gammazero/workerpool"
-	"github.com/pna/order-app-backend/internal"
-	"github.com/pna/order-app-backend/internal/controller"
-	"github.com/pna/order-app-backend/internal/database"
+	"github.com/pna/management-app-backend/internal"
+	"github.com/pna/management-app-backend/internal/controller"
+	"github.com/pna/management-app-backend/internal/database"
 	log "github.com/sirupsen/logrus"
 )
 

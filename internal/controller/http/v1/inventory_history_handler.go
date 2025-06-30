@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
-	"github.com/pna/order-app-backend/internal/service"
-	"github.com/pna/order-app-backend/internal/utils/error_utils"
+	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
+	"github.com/pna/management-app-backend/internal/service"
+	"github.com/pna/management-app-backend/internal/utils/error_utils"
 )
 
 type InventoryHistoryHandler struct {

@@ -2,14 +2,14 @@ package serviceimplement
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/pna/order-app-backend/internal/bean"
-	"github.com/pna/order-app-backend/internal/domain/model"
-	"github.com/pna/order-app-backend/internal/repository"
-	"github.com/pna/order-app-backend/internal/service"
-	"github.com/pna/order-app-backend/internal/utils/constants"
-	"github.com/pna/order-app-backend/internal/utils/env"
-	"github.com/pna/order-app-backend/internal/utils/error_utils"
-	"github.com/pna/order-app-backend/internal/utils/jwt"
+	"github.com/pna/management-app-backend/internal/bean"
+	"github.com/pna/management-app-backend/internal/domain/model"
+	"github.com/pna/management-app-backend/internal/repository"
+	"github.com/pna/management-app-backend/internal/service"
+	"github.com/pna/management-app-backend/internal/utils/constants"
+	"github.com/pna/management-app-backend/internal/utils/env"
+	"github.com/pna/management-app-backend/internal/utils/error_utils"
+	"github.com/pna/management-app-backend/internal/utils/jwt"
 	log "github.com/sirupsen/logrus"
 )
 

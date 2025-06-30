@@ -3,9 +3,9 @@ package repositoryimplement
 import (
 	"context"
 	"github.com/jmoiron/sqlx"
-	"github.com/pna/order-app-backend/internal/database"
-	"github.com/pna/order-app-backend/internal/domain/entity"
-	"github.com/pna/order-app-backend/internal/repository"
+	"github.com/pna/management-app-backend/internal/database"
+	"github.com/pna/management-app-backend/internal/domain/entity"
+	"github.com/pna/management-app-backend/internal/repository"
 )
 
 type HelloWorldRepository struct {

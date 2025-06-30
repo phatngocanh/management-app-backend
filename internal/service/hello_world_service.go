@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/pna/order-app-backend/internal/domain/model"
+	"github.com/pna/management-app-backend/internal/domain/model"
 )
 
 type HelloWorldService interface {

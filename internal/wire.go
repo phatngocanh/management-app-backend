@@ -5,14 +5,14 @@ package internal
 
 import (
 	"github.com/google/wire"
-	beanimplement "github.com/pna/order-app-backend/internal/bean/implement"
-	"github.com/pna/order-app-backend/internal/controller"
-	"github.com/pna/order-app-backend/internal/controller/http"
-	"github.com/pna/order-app-backend/internal/controller/http/middleware"
-	v1 "github.com/pna/order-app-backend/internal/controller/http/v1"
-	"github.com/pna/order-app-backend/internal/database"
-	repositoryimplement "github.com/pna/order-app-backend/internal/repository/implement"
-	serviceimplement "github.com/pna/order-app-backend/internal/service/implement"
+	beanimplement "github.com/pna/management-app-backend/internal/bean/implement"
+	"github.com/pna/management-app-backend/internal/controller"
+	"github.com/pna/management-app-backend/internal/controller/http"
+	"github.com/pna/management-app-backend/internal/controller/http/middleware"
+	v1 "github.com/pna/management-app-backend/internal/controller/http/v1"
+	"github.com/pna/management-app-backend/internal/database"
+	repositoryimplement "github.com/pna/management-app-backend/internal/repository/implement"
+	serviceimplement "github.com/pna/management-app-backend/internal/service/implement"
 )
 
 var container = wire.NewSet(

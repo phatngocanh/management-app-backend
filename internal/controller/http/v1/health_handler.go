@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/pna/order-app-backend/internal/database"
+	"github.com/pna/management-app-backend/internal/database"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

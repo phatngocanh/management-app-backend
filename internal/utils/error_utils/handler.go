@@ -3,7 +3,7 @@ package error_utils
 import (
 	"net/http"
 
-	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
+	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
 )
 
 func ErrorCodeToHttpResponse(errCode string, field string) (statusCode int, httpErrResponse httpcommon.HttpResponse[any]) {

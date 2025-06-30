@@ -1,4 +1,4 @@
-module github.com/pna/order-app-backend
+module github.com/pna/management-app-backend
 
 go 1.23.1
 

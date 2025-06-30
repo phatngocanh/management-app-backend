@@ -1,7 +1,7 @@
 package beanimplement
 
 import (
-	"github.com/pna/order-app-backend/internal/bean"
+	"github.com/pna/management-app-backend/internal/bean"
 	"golang.org/x/crypto/bcrypt"
 )
 

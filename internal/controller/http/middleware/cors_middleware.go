@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/pna/order-app-backend/internal/utils/env"
+	"github.com/pna/management-app-backend/internal/utils/env"
 )
 
 func CorsMiddleware() gin.HandlerFunc {

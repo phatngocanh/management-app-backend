@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	_ "github.com/pna/order-app-backend/docs"
+	_ "github.com/pna/management-app-backend/docs"
 
-	"github.com/pna/order-app-backend/startup"
+	"github.com/pna/management-app-backend/startup"
 )
 
 // @title Order App

@@ -8,14 +8,14 @@ package internal
 
 import (
 	"github.com/google/wire"
-	"github.com/pna/order-app-backend/internal/bean/implement"
-	"github.com/pna/order-app-backend/internal/controller"
-	"github.com/pna/order-app-backend/internal/controller/http"
-	"github.com/pna/order-app-backend/internal/controller/http/middleware"
-	"github.com/pna/order-app-backend/internal/controller/http/v1"
-	"github.com/pna/order-app-backend/internal/database"
-	"github.com/pna/order-app-backend/internal/repository/implement"
-	"github.com/pna/order-app-backend/internal/service/implement"
+	"github.com/pna/management-app-backend/internal/bean/implement"
+	"github.com/pna/management-app-backend/internal/controller"
+	"github.com/pna/management-app-backend/internal/controller/http"
+	"github.com/pna/management-app-backend/internal/controller/http/middleware"
+	"github.com/pna/management-app-backend/internal/controller/http/v1"
+	"github.com/pna/management-app-backend/internal/database"
+	"github.com/pna/management-app-backend/internal/repository/implement"
+	"github.com/pna/management-app-backend/internal/service/implement"
 )
 
 // Injectors from wire.go:

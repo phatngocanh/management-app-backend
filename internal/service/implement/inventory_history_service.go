@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pna/order-app-backend/internal/domain/entity"
-	"github.com/pna/order-app-backend/internal/domain/model"
-	"github.com/pna/order-app-backend/internal/repository"
-	"github.com/pna/order-app-backend/internal/service"
-	"github.com/pna/order-app-backend/internal/utils/error_utils"
+	"github.com/pna/management-app-backend/internal/domain/entity"
+	"github.com/pna/management-app-backend/internal/domain/model"
+	"github.com/pna/management-app-backend/internal/repository"
+	"github.com/pna/management-app-backend/internal/service"
+	"github.com/pna/management-app-backend/internal/utils/error_utils"
 	log "github.com/sirupsen/logrus"
 )
 

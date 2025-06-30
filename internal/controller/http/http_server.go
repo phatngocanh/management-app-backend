@@ -6,11 +6,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/pna/order-app-backend/internal/controller/http/middleware"
+	"github.com/pna/management-app-backend/internal/controller/http/middleware"
 
 	"github.com/gin-gonic/gin"
 
-	v1 "github.com/pna/order-app-backend/internal/controller/http/v1"
+	v1 "github.com/pna/management-app-backend/internal/controller/http/v1"
 )
 
 type Server struct {

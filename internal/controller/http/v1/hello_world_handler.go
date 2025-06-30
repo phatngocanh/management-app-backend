@@ -1,10 +1,10 @@
 package v1
 
 import (
-	httpcommon "github.com/pna/order-app-backend/internal/domain/http_common"
-	"github.com/pna/order-app-backend/internal/domain/model"
-	"github.com/pna/order-app-backend/internal/service"
-	"github.com/pna/order-app-backend/internal/utils/error_utils"
+	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
+	"github.com/pna/management-app-backend/internal/domain/model"
+	"github.com/pna/management-app-backend/internal/service"
+	"github.com/pna/management-app-backend/internal/utils/error_utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

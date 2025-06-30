@@ -1,6 +1,6 @@
 package controller
 
-import "github.com/pna/order-app-backend/internal/controller/http"
+import "github.com/pna/management-app-backend/internal/controller/http"
 
 type ApiContainer struct {
 	HttpServer *http.Server
