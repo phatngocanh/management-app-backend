@@ -25,144 +25,60 @@ func NewProductBomService(bomRepository repository.ProductBomRepository, product
 }
 
 func (s *ProductBomService) Create(ctx *gin.Context, request model.CreateProductBomRequest) (*model.ProductBomResponse, string) {
-	// Create BOM entity
-	bom := &entity.ProductBom{
-		ParentProductID:    request.ParentProductID,
-		ComponentProductID: request.ComponentProductID,
-		Quantity:           request.Quantity,
-	}
-
-	// Save to database
-	err := s.bomRepository.CreateCommand(ctx, bom, nil)
+	// Begin transaction
+	tx, err := s.unitOfWork.Begin(ctx)
 	if err != nil {
-		log.Error("ProductBomService.Create Error when create bom: " + err.Error())
+		log.Error("ProductBomService.Create Error when begin transaction: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Get product info for response
-	parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ParentProductID, nil)
-	componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
-
-	response := &model.ProductBomResponse{
-		ID:                 bom.ID,
-		ParentProductID:    bom.ParentProductID,
-		ComponentProductID: bom.ComponentProductID,
-		Quantity:           bom.Quantity,
-	}
-
-	if parentProduct != nil {
-		response.ParentProduct = &model.ProductBomInfo{
-			ID:            parentProduct.ID,
-			Name:          parentProduct.Name,
-			Spec:          parentProduct.Spec,
-			OriginalPrice: parentProduct.OriginalPrice,
+	// Defer rollback in case of error
+	defer func() {
+		if err != nil {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("ProductBomService.Create Error when rollback transaction: " + rollbackErr.Error())
+			}
 		}
-	}
+	}()
 
-	if componentProduct != nil {
-		response.ComponentProduct = &model.ProductBomInfo{
-			ID:            componentProduct.ID,
-			Name:          componentProduct.Name,
-			Spec:          componentProduct.Spec,
-			OriginalPrice: componentProduct.OriginalPrice,
-		}
-	}
-
-	return response, ""
-}
-
-func (s *ProductBomService) Update(ctx *gin.Context, request model.UpdateProductBomRequest) (*model.ProductBomResponse, string) {
-	// Check if BOM exists
-	existingBom, err := s.bomRepository.GetOneByIDQuery(ctx, request.ID, nil)
+	// Verify parent product exists
+	parentProduct, err := s.productRepository.GetOneByIDQuery(ctx, request.ParentProductID, tx)
 	if err != nil {
-		log.Error("ProductBomService.Update Error when get bom: " + err.Error())
+		log.Error("ProductBomService.Create Error when get parent product: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
-
-	if existingBom == nil {
+	if parentProduct == nil {
 		return nil, error_utils.ErrorCode.NOT_FOUND
 	}
 
-	// Update BOM entity
-	bom := &entity.ProductBom{
-		ID:                 request.ID,
-		ParentProductID:    request.ParentProductID,
-		ComponentProductID: request.ComponentProductID,
-		Quantity:           request.Quantity,
-	}
-
-	// Save to database
-	err = s.bomRepository.UpdateCommand(ctx, bom, nil)
-	if err != nil {
-		log.Error("ProductBomService.Update Error when update bom: " + err.Error())
-		return nil, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Get product info for response
-	parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ParentProductID, nil)
-	componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
-
-	response := &model.ProductBomResponse{
-		ID:                 bom.ID,
-		ParentProductID:    bom.ParentProductID,
-		ComponentProductID: bom.ComponentProductID,
-		Quantity:           bom.Quantity,
-	}
-
-	if parentProduct != nil {
-		response.ParentProduct = &model.ProductBomInfo{
-			ID:            parentProduct.ID,
-			Name:          parentProduct.Name,
-			Spec:          parentProduct.Spec,
-			OriginalPrice: parentProduct.OriginalPrice,
+	// Create BOM entries for each component
+	bomComponents := make([]model.BomComponentResponse, len(request.Components))
+	for i, component := range request.Components {
+		// Create BOM entity
+		bom := &entity.ProductBom{
+			ParentProductID:    request.ParentProductID,
+			ComponentProductID: component.ComponentProductID,
+			Quantity:           component.Quantity,
 		}
-	}
 
-	if componentProduct != nil {
-		response.ComponentProduct = &model.ProductBomInfo{
-			ID:            componentProduct.ID,
-			Name:          componentProduct.Name,
-			Spec:          componentProduct.Spec,
-			OriginalPrice: componentProduct.OriginalPrice,
+		// Save to database
+		err = s.bomRepository.CreateCommand(ctx, bom, tx)
+		if err != nil {
+			log.Error("ProductBomService.Create Error when create bom: " + err.Error())
+			return nil, error_utils.ErrorCode.DB_DOWN
 		}
-	}
 
-	return response, ""
-}
+		// Get component product info
+		componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, component.ComponentProductID, tx)
 
-func (s *ProductBomService) GetAll(ctx *gin.Context) (*model.GetAllProductBomsResponse, string) {
-	// Get all BOMs
-	boms, err := s.bomRepository.GetAllQuery(ctx, nil)
-	if err != nil {
-		log.Error("ProductBomService.GetAll Error when get boms: " + err.Error())
-		return nil, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Convert to response models
-	bomResponses := make([]model.ProductBomResponse, len(boms))
-	for i, bom := range boms {
-		bomResponses[i] = model.ProductBomResponse{
+		bomComponents[i] = model.BomComponentResponse{
 			ID:                 bom.ID,
-			ParentProductID:    bom.ParentProductID,
-			ComponentProductID: bom.ComponentProductID,
-			Quantity:           bom.Quantity,
-		}
-
-		// Optionally get product info
-		parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ParentProductID, nil)
-		componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
-
-		if parentProduct != nil {
-			bomResponses[i].ParentProduct = &model.ProductBomInfo{
-				ID:            parentProduct.ID,
-				Name:          parentProduct.Name,
-				Spec:          parentProduct.Spec,
-				OriginalPrice: parentProduct.OriginalPrice,
-			}
+			ComponentProductID: component.ComponentProductID,
+			Quantity:           component.Quantity,
 		}
 
 		if componentProduct != nil {
-			bomResponses[i].ComponentProduct = &model.ProductBomInfo{
+			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
 				ID:            componentProduct.ID,
 				Name:          componentProduct.Name,
 				Spec:          componentProduct.Spec,
@@ -171,32 +87,18 @@ func (s *ProductBomService) GetAll(ctx *gin.Context) (*model.GetAllProductBomsRe
 		}
 	}
 
-	return &model.GetAllProductBomsResponse{
-		Boms: bomResponses,
-	}, ""
-}
-
-func (s *ProductBomService) GetOne(ctx *gin.Context, id int) (*model.GetOneProductBomResponse, string) {
-	// Get BOM by ID
-	bom, err := s.bomRepository.GetOneByIDQuery(ctx, id, nil)
+	// Commit transaction
+	err = s.unitOfWork.Commit(tx)
 	if err != nil {
-		log.Error("ProductBomService.GetOne Error when get bom: " + err.Error())
+		log.Error("ProductBomService.Create Error when commit transaction: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	if bom == nil {
-		return nil, error_utils.ErrorCode.NOT_FOUND
-	}
-
-	// Get product info
-	parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ParentProductID, nil)
-	componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
-
-	response := model.ProductBomResponse{
-		ID:                 bom.ID,
-		ParentProductID:    bom.ParentProductID,
-		ComponentProductID: bom.ComponentProductID,
-		Quantity:           bom.Quantity,
+	// Prepare response
+	response := &model.ProductBomResponse{
+		ParentProductID: request.ParentProductID,
+		Components:      bomComponents,
+		TotalComponents: len(bomComponents),
 	}
 
 	if parentProduct != nil {
@@ -208,12 +110,231 @@ func (s *ProductBomService) GetOne(ctx *gin.Context, id int) (*model.GetOneProdu
 		}
 	}
 
-	if componentProduct != nil {
-		response.ComponentProduct = &model.ProductBomInfo{
-			ID:            componentProduct.ID,
-			Name:          componentProduct.Name,
-			Spec:          componentProduct.Spec,
-			OriginalPrice: componentProduct.OriginalPrice,
+	return response, ""
+}
+
+func (s *ProductBomService) Update(ctx *gin.Context, request model.UpdateProductBomRequest) (*model.ProductBomResponse, string) {
+	// Begin transaction
+	tx, err := s.unitOfWork.Begin(ctx)
+	if err != nil {
+		log.Error("ProductBomService.Update Error when begin transaction: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Defer rollback in case of error
+	defer func() {
+		if err != nil {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("ProductBomService.Update Error when rollback transaction: " + rollbackErr.Error())
+			}
+		}
+	}()
+
+	// Verify parent product exists
+	parentProduct, err := s.productRepository.GetOneByIDQuery(ctx, request.ParentProductID, tx)
+	if err != nil {
+		log.Error("ProductBomService.Update Error when get parent product: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+	if parentProduct == nil {
+		return nil, error_utils.ErrorCode.NOT_FOUND
+	}
+
+	// Delete all existing BOM entries for this parent product
+	existingBoms, err := s.bomRepository.GetByParentProductIDQuery(ctx, request.ParentProductID, tx)
+	if err != nil {
+		log.Error("ProductBomService.Update Error when get existing boms: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	for _, existingBom := range existingBoms {
+		err = s.bomRepository.DeleteCommand(ctx, existingBom.ID, tx)
+		if err != nil {
+			log.Error("ProductBomService.Update Error when delete existing bom: " + err.Error())
+			return nil, error_utils.ErrorCode.DB_DOWN
+		}
+	}
+
+	// Create new BOM entries for each component
+	bomComponents := make([]model.BomComponentResponse, len(request.Components))
+	for i, component := range request.Components {
+		// Create BOM entity
+		bom := &entity.ProductBom{
+			ParentProductID:    request.ParentProductID,
+			ComponentProductID: component.ComponentProductID,
+			Quantity:           component.Quantity,
+		}
+
+		// Save to database
+		err = s.bomRepository.CreateCommand(ctx, bom, tx)
+		if err != nil {
+			log.Error("ProductBomService.Update Error when create bom: " + err.Error())
+			return nil, error_utils.ErrorCode.DB_DOWN
+		}
+
+		// Get component product info
+		componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, component.ComponentProductID, tx)
+
+		bomComponents[i] = model.BomComponentResponse{
+			ID:                 bom.ID,
+			ComponentProductID: component.ComponentProductID,
+			Quantity:           component.Quantity,
+		}
+
+		if componentProduct != nil {
+			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
+				ID:            componentProduct.ID,
+				Name:          componentProduct.Name,
+				Spec:          componentProduct.Spec,
+				OriginalPrice: componentProduct.OriginalPrice,
+			}
+		}
+	}
+
+	// Commit transaction
+	err = s.unitOfWork.Commit(tx)
+	if err != nil {
+		log.Error("ProductBomService.Update Error when commit transaction: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Prepare response
+	response := &model.ProductBomResponse{
+		ParentProductID: request.ParentProductID,
+		Components:      bomComponents,
+		TotalComponents: len(bomComponents),
+	}
+
+	if parentProduct != nil {
+		response.ParentProduct = &model.ProductBomInfo{
+			ID:            parentProduct.ID,
+			Name:          parentProduct.Name,
+			Spec:          parentProduct.Spec,
+			OriginalPrice: parentProduct.OriginalPrice,
+		}
+	}
+
+	return response, ""
+}
+
+func (s *ProductBomService) GetAll(ctx *gin.Context) (*model.GetAllProductBomsResponse, string) {
+	// Get all BOM entries
+	allBoms, err := s.bomRepository.GetAllQuery(ctx, nil)
+	if err != nil {
+		log.Error("ProductBomService.GetAll Error when get boms: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Group BOM entries by parent product ID
+	bomMap := make(map[int][]entity.ProductBom)
+	for _, bom := range allBoms {
+		bomMap[bom.ParentProductID] = append(bomMap[bom.ParentProductID], bom)
+	}
+
+	// Convert to response models
+	bomResponses := make([]model.ProductBomResponse, 0, len(bomMap))
+	for parentProductID, components := range bomMap {
+		// Get parent product info
+		parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, parentProductID, nil)
+
+		// Convert components
+		bomComponents := make([]model.BomComponentResponse, len(components))
+		for i, component := range components {
+			// Get component product info
+			componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, component.ComponentProductID, nil)
+
+			bomComponents[i] = model.BomComponentResponse{
+				ID:                 component.ID,
+				ComponentProductID: component.ComponentProductID,
+				Quantity:           component.Quantity,
+			}
+
+			if componentProduct != nil {
+				bomComponents[i].ComponentProduct = &model.ProductBomInfo{
+					ID:            componentProduct.ID,
+					Name:          componentProduct.Name,
+					Spec:          componentProduct.Spec,
+					OriginalPrice: componentProduct.OriginalPrice,
+				}
+			}
+		}
+
+		bomResponse := model.ProductBomResponse{
+			ParentProductID: parentProductID,
+			Components:      bomComponents,
+			TotalComponents: len(bomComponents),
+		}
+
+		if parentProduct != nil {
+			bomResponse.ParentProduct = &model.ProductBomInfo{
+				ID:            parentProduct.ID,
+				Name:          parentProduct.Name,
+				Spec:          parentProduct.Spec,
+				OriginalPrice: parentProduct.OriginalPrice,
+			}
+		}
+
+		bomResponses = append(bomResponses, bomResponse)
+	}
+
+	return &model.GetAllProductBomsResponse{
+		Boms: bomResponses,
+	}, ""
+}
+
+func (s *ProductBomService) GetByParentProductID(ctx *gin.Context, parentProductID int) (*model.GetOneProductBomResponse, string) {
+	// Get BOM entries for parent product
+	boms, err := s.bomRepository.GetByParentProductIDQuery(ctx, parentProductID, nil)
+	if err != nil {
+		log.Error("ProductBomService.GetByParentProductID Error when get boms: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Get parent product info
+	parentProduct, err := s.productRepository.GetOneByIDQuery(ctx, parentProductID, nil)
+	if err != nil {
+		log.Error("ProductBomService.GetByParentProductID Error when get parent product: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	if parentProduct == nil {
+		return nil, error_utils.ErrorCode.NOT_FOUND
+	}
+
+	// Convert components
+	bomComponents := make([]model.BomComponentResponse, len(boms))
+	for i, bom := range boms {
+		// Get component product info
+		componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
+
+		bomComponents[i] = model.BomComponentResponse{
+			ID:                 bom.ID,
+			ComponentProductID: bom.ComponentProductID,
+			Quantity:           bom.Quantity,
+		}
+
+		if componentProduct != nil {
+			bomComponents[i].ComponentProduct = &model.ProductBomInfo{
+				ID:            componentProduct.ID,
+				Name:          componentProduct.Name,
+				Spec:          componentProduct.Spec,
+				OriginalPrice: componentProduct.OriginalPrice,
+			}
+		}
+	}
+
+	response := model.ProductBomResponse{
+		ParentProductID: parentProductID,
+		Components:      bomComponents,
+		TotalComponents: len(bomComponents),
+	}
+
+	if parentProduct != nil {
+		response.ParentProduct = &model.ProductBomInfo{
+			ID:            parentProduct.ID,
+			Name:          parentProduct.Name,
+			Spec:          parentProduct.Spec,
+			OriginalPrice: parentProduct.OriginalPrice,
 		}
 	}
 
@@ -222,92 +343,77 @@ func (s *ProductBomService) GetOne(ctx *gin.Context, id int) (*model.GetOneProdu
 	}, ""
 }
 
-func (s *ProductBomService) GetByParentProductID(ctx *gin.Context, parentProductID int) (*model.GetProductBomsResponse, string) {
-	// Get BOMs by parent product ID
-	boms, err := s.bomRepository.GetByParentProductIDQuery(ctx, parentProductID, nil)
-	if err != nil {
-		log.Error("ProductBomService.GetByParentProductID Error when get boms: " + err.Error())
-		return nil, error_utils.ErrorCode.DB_DOWN
-	}
-
-	// Convert to response models
-	bomResponses := make([]model.ProductBomResponse, len(boms))
-	for i, bom := range boms {
-		bomResponses[i] = model.ProductBomResponse{
-			ID:                 bom.ID,
-			ParentProductID:    bom.ParentProductID,
-			ComponentProductID: bom.ComponentProductID,
-			Quantity:           bom.Quantity,
-		}
-
-		// Get component product info
-		componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ComponentProductID, nil)
-		if componentProduct != nil {
-			bomResponses[i].ComponentProduct = &model.ProductBomInfo{
-				ID:            componentProduct.ID,
-				Name:          componentProduct.Name,
-				Spec:          componentProduct.Spec,
-				OriginalPrice: componentProduct.OriginalPrice,
-			}
-		}
-	}
-
-	return &model.GetProductBomsResponse{
-		Boms: bomResponses,
-	}, ""
-}
-
-func (s *ProductBomService) GetByComponentProductID(ctx *gin.Context, componentProductID int) (*model.GetProductBomsResponse, string) {
-	// Get BOMs by component product ID
+func (s *ProductBomService) GetByComponentProductID(ctx *gin.Context, componentProductID int) (*model.GetAllProductBomsResponse, string) {
+	// Get BOM entries where this product is used as component
 	boms, err := s.bomRepository.GetByComponentProductIDQuery(ctx, componentProductID, nil)
 	if err != nil {
 		log.Error("ProductBomService.GetByComponentProductID Error when get boms: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
-	// Convert to response models
-	bomResponses := make([]model.ProductBomResponse, len(boms))
-	for i, bom := range boms {
-		bomResponses[i] = model.ProductBomResponse{
-			ID:                 bom.ID,
-			ParentProductID:    bom.ParentProductID,
-			ComponentProductID: bom.ComponentProductID,
-			Quantity:           bom.Quantity,
-		}
-
-		// Get parent product info
-		parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bom.ParentProductID, nil)
-		if parentProduct != nil {
-			bomResponses[i].ParentProduct = &model.ProductBomInfo{
-				ID:            parentProduct.ID,
-				Name:          parentProduct.Name,
-				Spec:          parentProduct.Spec,
-				OriginalPrice: parentProduct.OriginalPrice,
-			}
-		}
+	// Group by parent product ID
+	bomMap := make(map[int][]entity.ProductBom)
+	for _, bom := range boms {
+		bomMap[bom.ParentProductID] = append(bomMap[bom.ParentProductID], bom)
 	}
 
-	return &model.GetProductBomsResponse{
+	// For each parent product, get its complete BOM
+	bomResponses := make([]model.ProductBomResponse, 0, len(bomMap))
+	for parentProductID := range bomMap {
+		bomResponse, errCode := s.GetByParentProductID(ctx, parentProductID)
+		if errCode != "" {
+			log.Error("ProductBomService.GetByComponentProductID Error when get BOM for parent " + string(rune(parentProductID)))
+			continue
+		}
+		bomResponses = append(bomResponses, bomResponse.Bom)
+	}
+
+	return &model.GetAllProductBomsResponse{
 		Boms: bomResponses,
 	}, ""
 }
 
-func (s *ProductBomService) Delete(ctx *gin.Context, id int) string {
-	// Check if BOM exists
-	existingBom, err := s.bomRepository.GetOneByIDQuery(ctx, id, nil)
+func (s *ProductBomService) DeleteByParentProductID(ctx *gin.Context, parentProductID int) string {
+	// Begin transaction
+	tx, err := s.unitOfWork.Begin(ctx)
 	if err != nil {
-		log.Error("ProductBomService.Delete Error when get bom: " + err.Error())
+		log.Error("ProductBomService.DeleteByParentProductID Error when begin transaction: " + err.Error())
 		return error_utils.ErrorCode.DB_DOWN
 	}
 
-	if existingBom == nil {
+	// Defer rollback in case of error
+	defer func() {
+		if err != nil {
+			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+				log.Error("ProductBomService.DeleteByParentProductID Error when rollback transaction: " + rollbackErr.Error())
+			}
+		}
+	}()
+
+	// Get all BOM entries for this parent product
+	boms, err := s.bomRepository.GetByParentProductIDQuery(ctx, parentProductID, tx)
+	if err != nil {
+		log.Error("ProductBomService.DeleteByParentProductID Error when get boms: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+
+	if len(boms) == 0 {
 		return error_utils.ErrorCode.NOT_FOUND
 	}
 
-	// Delete from database
-	err = s.bomRepository.DeleteCommand(ctx, id, nil)
+	// Delete all BOM entries
+	for _, bom := range boms {
+		err = s.bomRepository.DeleteCommand(ctx, bom.ID, tx)
+		if err != nil {
+			log.Error("ProductBomService.DeleteByParentProductID Error when delete bom: " + err.Error())
+			return error_utils.ErrorCode.DB_DOWN
+		}
+	}
+
+	// Commit transaction
+	err = s.unitOfWork.Commit(tx)
 	if err != nil {
-		log.Error("ProductBomService.Delete Error when delete bom: " + err.Error())
+		log.Error("ProductBomService.DeleteByParentProductID Error when commit transaction: " + err.Error())
 		return error_utils.ErrorCode.DB_DOWN
 	}
 

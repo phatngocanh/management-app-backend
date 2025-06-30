@@ -1,25 +1,37 @@
 package model
 
-type CreateProductBomRequest struct {
-	ParentProductID    int     `json:"parent_product_id" binding:"required"`    // ID sản phẩm thành phẩm
+// Component for BOM - represents one component needed
+type BomComponent struct {
 	ComponentProductID int     `json:"component_product_id" binding:"required"` // ID sản phẩm nguyên liệu
 	Quantity           float64 `json:"quantity" binding:"required"`             // Số lượng nguyên liệu cần thiết
 }
 
-type UpdateProductBomRequest struct {
-	ID                 int     `json:"id" binding:"required"`
-	ParentProductID    int     `json:"parent_product_id" binding:"required"`    // ID sản phẩm thành phẩm
-	ComponentProductID int     `json:"component_product_id" binding:"required"` // ID sản phẩm nguyên liệu
-	Quantity           float64 `json:"quantity" binding:"required"`             // Số lượng nguyên liệu cần thiết
-}
-
-type ProductBomResponse struct {
-	ID                 int             `json:"id"`
-	ParentProductID    int             `json:"parent_product_id"`           // ID sản phẩm thành phẩm
+// Component with full product info for response
+type BomComponentResponse struct {
+	ID                 int             `json:"id"`                          // ID của BOM entry
 	ComponentProductID int             `json:"component_product_id"`        // ID sản phẩm nguyên liệu
 	Quantity           float64         `json:"quantity"`                    // Số lượng nguyên liệu cần thiết
-	ParentProduct      *ProductBomInfo `json:"parent_product,omitempty"`    // Thông tin sản phẩm thành phẩm
 	ComponentProduct   *ProductBomInfo `json:"component_product,omitempty"` // Thông tin sản phẩm nguyên liệu
+}
+
+// Create BOM with multiple components
+type CreateProductBomRequest struct {
+	ParentProductID int            `json:"parent_product_id" binding:"required"` // ID sản phẩm thành phẩm
+	Components      []BomComponent `json:"components" binding:"required,dive"`   // Danh sách nguyên liệu cần thiết
+}
+
+// Update entire BOM (replace all components)
+type UpdateProductBomRequest struct {
+	ParentProductID int            `json:"parent_product_id" binding:"required"` // ID sản phẩm thành phẩm
+	Components      []BomComponent `json:"components" binding:"required,dive"`   // Danh sách nguyên liệu cần thiết mới
+}
+
+// BOM response - one product with all its components
+type ProductBomResponse struct {
+	ParentProductID int                    `json:"parent_product_id"`        // ID sản phẩm thành phẩm
+	ParentProduct   *ProductBomInfo        `json:"parent_product,omitempty"` // Thông tin sản phẩm thành phẩm
+	Components      []BomComponentResponse `json:"components"`               // Danh sách nguyên liệu
+	TotalComponents int                    `json:"total_components"`         // Tổng số loại nguyên liệu
 }
 
 type GetAllProductBomsResponse struct {
@@ -28,10 +40,6 @@ type GetAllProductBomsResponse struct {
 
 type GetOneProductBomResponse struct {
 	Bom ProductBomResponse `json:"bom"`
-}
-
-type GetProductBomsResponse struct {
-	Boms []ProductBomResponse `json:"boms"`
 }
 
 type ProductBomInfo struct {

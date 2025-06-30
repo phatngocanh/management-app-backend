@@ -7,6 +7,7 @@ type CreateProductRequest struct {
 	CategoryID    *int   `json:"category_id"`                       // ID danh mục sản phẩm
 	UnitID        *int   `json:"unit_id"`                           // ID đơn vị tính
 	Description   string `json:"description"`                       // Mô tả chi tiết sản phẩm
+	UnitCode      string `json:"unit_code"`                         // Mã đơn vị tính
 }
 
 type UpdateProductRequest struct {

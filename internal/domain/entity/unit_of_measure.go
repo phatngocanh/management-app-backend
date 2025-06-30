@@ -9,3 +9,19 @@ type UnitOfMeasure struct {
 	Description string    `db:"description"` // Mô tả đơn vị
 	CreatedAt   time.Time `db:"created_at"`  // Thời gian tạo
 }
+
+type unitOfMeasureCode struct {
+	THUNG string
+	CAI   string
+	ML    string
+	KG    string
+	M     string
+}
+
+var UnitOfMeasureCode unitOfMeasureCode = unitOfMeasureCode{
+	THUNG: "THUNG",
+	CAI:   "CAI",
+	ML:    "ML",
+	KG:    "KG",
+	M:     "M",
+}

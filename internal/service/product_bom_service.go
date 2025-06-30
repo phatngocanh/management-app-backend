@@ -9,8 +9,7 @@ type ProductBomService interface {
 	Create(ctx *gin.Context, request model.CreateProductBomRequest) (*model.ProductBomResponse, string)
 	Update(ctx *gin.Context, request model.UpdateProductBomRequest) (*model.ProductBomResponse, string)
 	GetAll(ctx *gin.Context) (*model.GetAllProductBomsResponse, string)
-	GetOne(ctx *gin.Context, id int) (*model.GetOneProductBomResponse, string)
-	GetByParentProductID(ctx *gin.Context, parentProductID int) (*model.GetProductBomsResponse, string)
-	GetByComponentProductID(ctx *gin.Context, componentProductID int) (*model.GetProductBomsResponse, string)
-	Delete(ctx *gin.Context, id int) string
+	GetByParentProductID(ctx *gin.Context, parentProductID int) (*model.GetOneProductBomResponse, string)
+	GetByComponentProductID(ctx *gin.Context, componentProductID int) (*model.GetAllProductBomsResponse, string)
+	DeleteByParentProductID(ctx *gin.Context, parentProductID int) string
 }
