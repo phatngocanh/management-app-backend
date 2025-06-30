@@ -17,6 +17,7 @@ func MapRoutes(router *gin.Engine,
 	unitOfMeasureHandler *UnitOfMeasureHandler,
 	inventoryHandler *InventoryHandler,
 	inventoryHistoryHandler *InventoryHistoryHandler,
+	inventoryReceiptHandler *InventoryReceiptHandler,
 	customerHandler *CustomerHandler,
 	statisticsHandler *StatisticsHandler,
 	authMiddleware *middleware.AuthMiddleware,
@@ -84,6 +85,12 @@ func MapRoutes(router *gin.Engine,
 		inventory := v1.Group("/inventory")
 		{
 			inventory.GET("", authMiddleware.VerifyAccessToken, inventoryHandler.GetAll)
+		}
+		inventoryReceipts := v1.Group("/inventory-receipts")
+		{
+			inventoryReceipts.POST("", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.Create)
+			inventoryReceipts.GET("", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.GetAll)
+			inventoryReceipts.GET("/:receiptId", authMiddleware.VerifyAccessToken, inventoryReceiptHandler.GetOne)
 		}
 		statistics := v1.Group("/statistics")
 		{

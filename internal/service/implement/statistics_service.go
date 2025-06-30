@@ -30,7 +30,7 @@ func NewStatisticsService(
 
 func (s *StatisticsService) GetDashboardStats(ctx context.Context) (model.DashboardStatsResponse, string) {
 	// Get total products
-	products, err := s.productRepo.GetAllQuery(ctx, "", nil)
+	products, err := s.productRepo.GetAllQuery(ctx, "", "PURCHASE", nil)
 	if err != nil {
 		log.Error("StatisticsService.GetDashboardStats Error fetching products: " + err.Error())
 		return model.DashboardStatsResponse{}, error_utils.ErrorCode.DB_DOWN
