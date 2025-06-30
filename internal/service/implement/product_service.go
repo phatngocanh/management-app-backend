@@ -41,12 +41,13 @@ func NewProductService(
 // Helper function to build complete ProductResponse with all related information
 func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.Product) (*model.ProductResponse, string) {
 	response := &model.ProductResponse{
-		ID:          product.ID,
-		Name:        product.Name,
-		Cost:        product.Cost,
-		CategoryID:  product.CategoryID,
-		UnitID:      product.UnitID,
-		Description: product.Description,
+		ID:            product.ID,
+		Name:          product.Name,
+		Cost:          product.Cost,
+		CategoryID:    product.CategoryID,
+		UnitID:        product.UnitID,
+		Description:   product.Description,
+		OperationType: product.OperationType,
 	}
 
 	// Get inventory info
@@ -174,11 +175,12 @@ func (s *ProductService) Create(ctx *gin.Context, request model.CreateProductReq
 
 	// Create product entity
 	product := &entity.Product{
-		Name:        request.Name,
-		Cost:        request.Cost,
-		CategoryID:  request.CategoryID,
-		UnitID:      request.UnitID,
-		Description: request.Description,
+		Name:          request.Name,
+		Cost:          request.Cost,
+		CategoryID:    request.CategoryID,
+		UnitID:        request.UnitID,
+		Description:   request.Description,
+		OperationType: request.OperationType,
 	}
 
 	// Save product to database
@@ -230,12 +232,13 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 
 	// Update product entity
 	product := &entity.Product{
-		ID:          request.ID,
-		Name:        request.Name,
-		Cost:        request.Cost,
-		CategoryID:  request.CategoryID,
-		UnitID:      request.UnitID,
-		Description: request.Description,
+		ID:            request.ID,
+		Name:          request.Name,
+		Cost:          request.Cost,
+		CategoryID:    request.CategoryID,
+		UnitID:        request.UnitID,
+		Description:   request.Description,
+		OperationType: request.OperationType,
 	}
 
 	// Save to database
@@ -269,12 +272,13 @@ func (s *ProductService) GetAll(ctx *gin.Context, categoryIDs string) (*model.Ge
 			log.Error("ProductService.GetAll Error when build product response for product " + string(rune(product.ID)) + ": " + errCode)
 			// Continue with basic info if detailed info fails
 			productResponses[i] = model.ProductResponse{
-				ID:          product.ID,
-				Name:        product.Name,
-				Cost:        product.Cost,
-				CategoryID:  product.CategoryID,
-				UnitID:      product.UnitID,
-				Description: product.Description,
+				ID:            product.ID,
+				Name:          product.Name,
+				Cost:          product.Cost,
+				CategoryID:    product.CategoryID,
+				UnitID:        product.UnitID,
+				Description:   product.Description,
+				OperationType: product.OperationType,
 			}
 			continue
 		}
