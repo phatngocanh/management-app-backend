@@ -46,7 +46,7 @@ type ProductBomInfo struct {
 	ID           int     `json:"id"`            // ID sản phẩm
 	Name         string  `json:"name"`          // Tên sản phẩm
 	Cost         float64 `json:"cost"`          // Giá vốn
-	UnitCode     string  `json:"unit_code"`     // Mã đơn vị tính (VD: "thung", "cai", "ML")
+	UnitName     string  `json:"unit_name"`     // Tên đơn vị tính (VD: "thùng", "cái", "ml")
 	CategoryCode string  `json:"category_code"` // Mã danh mục (VD: "hoa-chat", "nhan")
 }
 

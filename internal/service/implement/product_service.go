@@ -101,13 +101,13 @@ func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.
 
 			if componentProduct != nil {
 				// Get unit and category info for component
-				unitCode := ""
+				unitName := ""
 				categoryCode := ""
 
 				if componentProduct.UnitID != nil {
 					unit, _ := s.unitRepository.GetOneByIDQuery(ctx, *componentProduct.UnitID, nil)
 					if unit != nil {
-						unitCode = unit.Code
+						unitName = unit.Name
 					}
 				}
 
@@ -122,7 +122,7 @@ func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.
 					ID:           componentProduct.ID,
 					Name:         componentProduct.Name,
 					Cost:         componentProduct.Cost,
-					UnitCode:     unitCode,
+					UnitName:     unitName,
 					CategoryCode: categoryCode,
 				}
 			}

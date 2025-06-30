@@ -40,14 +40,14 @@ func (s *ProductBomService) buildProductBomInfo(ctx *gin.Context, product *entit
 		return nil
 	}
 
-	unitCode := ""
+	unitName := ""
 	categoryCode := ""
 
-	// Get unit code
+	// Get unit name
 	if product.UnitID != nil {
 		unit, err := s.unitRepository.GetOneByIDQuery(ctx, *product.UnitID, nil)
 		if err == nil && unit != nil {
-			unitCode = unit.Code
+			unitName = unit.Name
 		}
 	}
 
@@ -63,7 +63,7 @@ func (s *ProductBomService) buildProductBomInfo(ctx *gin.Context, product *entit
 		ID:           product.ID,
 		Name:         product.Name,
 		Cost:         product.Cost,
-		UnitCode:     unitCode,
+		UnitName:     unitName,
 		CategoryCode: categoryCode,
 	}
 }
