@@ -12,4 +12,5 @@ type ProductBomService interface {
 	GetByParentProductID(ctx *gin.Context, parentProductID int) (*model.GetOneProductBomResponse, string)
 	GetByComponentProductID(ctx *gin.Context, componentProductID int) (*model.GetAllProductBomsResponse, string)
 	DeleteByParentProductID(ctx *gin.Context, parentProductID int) string
+	CalculateMaterialRequirements(ctx *gin.Context, request model.CalculateMaterialRequirementsRequest) (*model.MaterialRequirementsResponse, string)
 }

@@ -13,6 +13,8 @@ func MapRoutes(router *gin.Engine,
 	userHandler *UserHandler,
 	productHandler *ProductHandler,
 	productBomHandler *ProductBomHandler,
+	productCategoryHandler *ProductCategoryHandler,
+	unitOfMeasureHandler *UnitOfMeasureHandler,
 	inventoryHandler *InventoryHandler,
 	inventoryHistoryHandler *InventoryHistoryHandler,
 	customerHandler *CustomerHandler,
@@ -55,6 +57,23 @@ func MapRoutes(router *gin.Engine,
 			boms.GET("/parent/:parentProductId", authMiddleware.VerifyAccessToken, productBomHandler.GetProductBomByParentID)
 			boms.GET("/component/:componentProductId", authMiddleware.VerifyAccessToken, productBomHandler.GetProductBomsByComponentID)
 			boms.DELETE("/parent/:parentProductId", authMiddleware.VerifyAccessToken, productBomHandler.DeleteProductBom)
+			boms.POST("/explosion", authMiddleware.VerifyAccessToken, productBomHandler.CalculateMaterialRequirements)
+		}
+		categories := v1.Group("/categories")
+		{
+			categories.POST("", authMiddleware.VerifyAccessToken, productCategoryHandler.Create)
+			categories.PUT("", authMiddleware.VerifyAccessToken, productCategoryHandler.Update)
+			categories.GET("", authMiddleware.VerifyAccessToken, productCategoryHandler.GetAll)
+			categories.GET("/:categoryId", authMiddleware.VerifyAccessToken, productCategoryHandler.GetOne)
+			categories.GET("/code/:code", authMiddleware.VerifyAccessToken, productCategoryHandler.GetByCode)
+		}
+		units := v1.Group("/units")
+		{
+			units.POST("", authMiddleware.VerifyAccessToken, unitOfMeasureHandler.Create)
+			units.PUT("", authMiddleware.VerifyAccessToken, unitOfMeasureHandler.Update)
+			units.GET("", authMiddleware.VerifyAccessToken, unitOfMeasureHandler.GetAll)
+			units.GET("/:unitId", authMiddleware.VerifyAccessToken, unitOfMeasureHandler.GetOne)
+			units.GET("/code/:code", authMiddleware.VerifyAccessToken, unitOfMeasureHandler.GetByCode)
 		}
 		customers := v1.Group("/customers")
 		{

@@ -1,9 +1,10 @@
 package v1
 
 import (
-	"github.com/pna/management-app-backend/internal/utils/validation"
 	"net/http"
 	"strconv"
+
+	"github.com/pna/management-app-backend/internal/utils/validation"
 
 	"github.com/gin-gonic/gin"
 	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
@@ -185,4 +186,32 @@ func (h *ProductBomHandler) DeleteProductBom(ctx *gin.Context) {
 
 	message := "Xóa BOM thành công"
 	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&message))
+}
+
+// @Summary Calculate Material Requirements
+// @Description Calculate the total raw material requirements for producing a specified quantity of a product
+// @Tags BOMs
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Authorization: Bearer"
+// @Param request body model.CalculateMaterialRequirementsRequest true "Material requirements calculation request"
+// @Success 200 {object} httpcommon.HttpResponse[model.MaterialRequirementsResponse]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
+// @Failure 404 {object} httpcommon.HttpResponse[any]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /boms/explosion [post]
+func (h *ProductBomHandler) CalculateMaterialRequirements(ctx *gin.Context) {
+	var request model.CalculateMaterialRequirementsRequest
+	if err := validation.BindJsonAndValidate(ctx, &request); err != nil {
+		return
+	}
+
+	result, errorCode := h.bomService.CalculateMaterialRequirements(ctx, request)
+	if errorCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errorCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(result))
 }

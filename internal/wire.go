@@ -31,6 +31,8 @@ var handlerSet = wire.NewSet(
 	v1.NewUserHandler,
 	v1.NewProductHandler,
 	v1.NewProductBomHandler,
+	v1.NewProductCategoryHandler,
+	v1.NewUnitOfMeasureHandler,
 	v1.NewInventoryHandler,
 	v1.NewInventoryHistoryHandler,
 	v1.NewCustomerHandler,

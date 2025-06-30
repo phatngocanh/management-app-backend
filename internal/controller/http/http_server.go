@@ -20,6 +20,8 @@ type Server struct {
 	userHandler             *v1.UserHandler
 	productHandler          *v1.ProductHandler
 	productBomHandler       *v1.ProductBomHandler
+	productCategoryHandler  *v1.ProductCategoryHandler
+	unitOfMeasureHandler    *v1.UnitOfMeasureHandler
 	inventoryHandler        *v1.InventoryHandler
 	inventoryHistoryHandler *v1.InventoryHistoryHandler
 	customerHandler         *v1.CustomerHandler
@@ -34,6 +36,8 @@ func NewServer(
 	userHandler *v1.UserHandler,
 	productHandler *v1.ProductHandler,
 	productBomHandler *v1.ProductBomHandler,
+	productCategoryHandler *v1.ProductCategoryHandler,
+	unitOfMeasureHandler *v1.UnitOfMeasureHandler,
 	inventoryHandler *v1.InventoryHandler,
 	inventoryHistoryHandler *v1.InventoryHistoryHandler,
 	customerHandler *v1.CustomerHandler,
@@ -47,6 +51,8 @@ func NewServer(
 		userHandler:             userHandler,
 		productHandler:          productHandler,
 		productBomHandler:       productBomHandler,
+		productCategoryHandler:  productCategoryHandler,
+		unitOfMeasureHandler:    unitOfMeasureHandler,
 		inventoryHandler:        inventoryHandler,
 		inventoryHistoryHandler: inventoryHistoryHandler,
 		customerHandler:         customerHandler,
@@ -71,6 +77,8 @@ func (s *Server) Run() {
 		s.userHandler,
 		s.productHandler,
 		s.productBomHandler,
+		s.productCategoryHandler,
+		s.unitOfMeasureHandler,
 		s.inventoryHandler,
 		s.inventoryHistoryHandler,
 		s.customerHandler,

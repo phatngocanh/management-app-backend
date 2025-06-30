@@ -253,9 +253,9 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 	return response, ""
 }
 
-func (s *ProductService) GetAll(ctx *gin.Context) (*model.GetAllProductsResponse, string) {
-	// Get all products
-	products, err := s.productRepository.GetAllQuery(ctx, nil)
+func (s *ProductService) GetAll(ctx *gin.Context, categoryIDs string) (*model.GetAllProductsResponse, string) {
+	// Get all products with category filter
+	products, err := s.productRepository.GetAllQuery(ctx, categoryIDs, nil)
 	if err != nil {
 		log.Error("ProductService.GetAll Error when get products: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN

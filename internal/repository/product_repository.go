@@ -8,7 +8,7 @@ import (
 )
 
 type ProductRepository interface {
-	GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.Product, error)
+	GetAllQuery(ctx context.Context, categoryIDs string, tx *sqlx.Tx) ([]entity.Product, error)
 	GetOneByIDQuery(ctx context.Context, id int, tx *sqlx.Tx) (*entity.Product, error)
 	CreateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error
 	UpdateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error

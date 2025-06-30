@@ -19,11 +19,18 @@ func NewProductRepository(db database.Db) repository.ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (repo *ProductRepository) GetAllQuery(ctx context.Context, tx *sqlx.Tx) ([]entity.Product, error) {
+func (repo *ProductRepository) GetAllQuery(ctx context.Context, categoryIDs string, tx *sqlx.Tx) ([]entity.Product, error) {
 	var products []entity.Product
-	query := "SELECT * FROM products ORDER BY id"
-	var err error
+	var query string
 
+	if categoryIDs != "" {
+		// Use the category string directly in the IN clause
+		query = "SELECT * FROM products WHERE category_id IN (" + categoryIDs + ") ORDER BY id"
+	} else {
+		query = "SELECT * FROM products ORDER BY id"
+	}
+
+	var err error
 	if tx != nil {
 		err = tx.SelectContext(ctx, &products, query)
 	} else {

@@ -423,3 +423,88 @@ func (s *ProductBomService) DeleteByParentProductID(ctx *gin.Context, parentProd
 
 	return ""
 }
+
+func (s *ProductBomService) CalculateMaterialRequirements(ctx *gin.Context, request model.CalculateMaterialRequirementsRequest) (*model.MaterialRequirementsResponse, string) {
+	// Verify parent product exists
+	parentProduct, err := s.productRepository.GetOneByIDQuery(ctx, request.ParentProductID, nil)
+	if err != nil {
+		log.Error("ProductBomService.CalculateMaterialRequirements Error when get parent product: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+	if parentProduct == nil {
+		return nil, error_utils.ErrorCode.NOT_FOUND
+	}
+
+	// Map to accumulate material requirements by product ID
+	materialMap := make(map[int]float64)
+
+	// Recursively calculate material requirements
+	err = s.calculateRequirementsRecursive(ctx, request.ParentProductID, request.Quantity, materialMap)
+	if err != nil {
+		log.Error("ProductBomService.CalculateMaterialRequirements Error in recursive calculation: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
+	// Convert map to slice and get product info
+	var materialRequirements []model.MaterialRequirement
+	for productID, quantity := range materialMap {
+		// Get product info
+		product, err := s.productRepository.GetOneByIDQuery(ctx, productID, nil)
+		if err != nil {
+			log.Error("ProductBomService.CalculateMaterialRequirements Error when get material product: " + err.Error())
+			continue // Skip this material if we can't get its info
+		}
+
+		requirement := model.MaterialRequirement{
+			ProductID:        productID,
+			RequiredQuantity: quantity,
+		}
+
+		if product != nil {
+			requirement.Product = s.buildProductBomInfo(ctx, product)
+		}
+
+		materialRequirements = append(materialRequirements, requirement)
+	}
+
+	// Prepare response
+	response := &model.MaterialRequirementsResponse{
+		ParentProductID:      request.ParentProductID,
+		RequestedQuantity:    request.Quantity,
+		MaterialRequirements: materialRequirements,
+		TotalMaterials:       len(materialRequirements),
+	}
+
+	if parentProduct != nil {
+		response.ParentProduct = s.buildProductBomInfo(ctx, parentProduct)
+	}
+
+	return response, ""
+}
+
+// Helper function to recursively calculate material requirements
+func (s *ProductBomService) calculateRequirementsRecursive(ctx *gin.Context, productID int, quantity float64, materialMap map[int]float64) error {
+	// Get BOM for this product
+	boms, err := s.bomRepository.GetByParentProductIDQuery(ctx, productID, nil)
+	if err != nil {
+		return err
+	}
+
+	// If no BOM found, this is a raw material
+	if len(boms) == 0 {
+		// Accumulate quantity for this raw material
+		materialMap[productID] += quantity
+		return nil
+	}
+
+	// If BOM exists, recursively calculate for each component
+	for _, bom := range boms {
+		componentQuantity := bom.Quantity * quantity
+		err = s.calculateRequirementsRecursive(ctx, bom.ComponentProductID, componentQuantity, materialMap)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

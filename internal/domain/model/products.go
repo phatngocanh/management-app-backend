@@ -11,7 +11,7 @@ type CreateProductRequest struct {
 type UpdateProductRequest struct {
 	ID          int     `json:"id" binding:"required"`
 	Name        string  `json:"name" binding:"required"` // Tên sản phẩm
-	Cost        float64 `json:"cost" binding:"required"` // Giá vốn của sản phẩm (VND)
+	Cost        float64 `json:"cost"`                    // Giá vốn của sản phẩm (VND)
 	CategoryID  *int    `json:"category_id"`             // ID danh mục sản phẩm
 	UnitID      *int    `json:"unit_id"`                 // ID đơn vị tính
 	Description string  `json:"description"`             // Mô tả chi tiết sản phẩm
