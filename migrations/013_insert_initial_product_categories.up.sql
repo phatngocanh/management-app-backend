@@ -1,13 +1,3 @@
--- Product categories for chemical company materials
-CREATE TABLE product_categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL COMMENT 'Tên danh mục',
-    code VARCHAR(50) NOT NULL UNIQUE COMMENT 'Mã danh mục',
-    description TEXT COMMENT 'Mô tả danh mục',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert categories for chemical company
 INSERT INTO product_categories (name, code, description) VALUES
 ('Thùng chứa', 'THUNG', 'Các loại thùng dùng để chứa hóa chất'),
 ('Nhãn mác', 'NHAN', 'Các loại nhãn dán sản phẩm'),

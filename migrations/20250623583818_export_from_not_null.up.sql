@@ -1,2 +1,0 @@
-ALTER TABLE order_items 
-MODIFY COLUMN export_from ENUM('INVENTORY', 'EXTERNAL') NOT NULL; 

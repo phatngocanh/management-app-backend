@@ -1,1 +1,0 @@
-ALTER TABLE orders ADD COLUMN shipping_fee INT DEFAULT 0 COMMENT 'Phí vận chuyển (VND)'; 

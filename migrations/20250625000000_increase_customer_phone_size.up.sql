@@ -1,1 +1,0 @@
-ALTER TABLE customers MODIFY COLUMN phone VARCHAR(30); 
