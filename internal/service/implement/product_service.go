@@ -55,6 +55,7 @@ func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.
 func (s *ProductService) buildProductResponseWithOptions(ctx *gin.Context, product *entity.Product, noBom bool) (*model.ProductResponse, string) {
 	response := &model.ProductResponse{
 		ID:            product.ID,
+		Code:          product.Code,
 		Name:          product.Name,
 		Cost:          product.Cost,
 		CategoryID:    product.CategoryID,
@@ -311,6 +312,7 @@ func (s *ProductService) GetAll(ctx *gin.Context, categoryFilter string, operati
 			// Continue with basic info if detailed info fails
 			productResponses[i] = model.ProductResponse{
 				ID:            product.ID,
+				Code:          product.Code,
 				Name:          product.Name,
 				Cost:          product.Cost,
 				CategoryID:    product.CategoryID,

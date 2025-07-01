@@ -21,6 +21,7 @@ type UpdateProductRequest struct {
 
 type ProductResponse struct {
 	ID            int                      `json:"id"`
+	Code          string                   `json:"code"`               // Mã sản phẩm (SP00001)
 	Name          string                   `json:"name"`               // Tên sản phẩm
 	Cost          float64                  `json:"cost"`               // Giá vốn của sản phẩm (VND)
 	CategoryID    *int                     `json:"category_id"`        // ID danh mục sản phẩm

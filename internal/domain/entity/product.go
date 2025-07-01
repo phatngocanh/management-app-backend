@@ -2,6 +2,7 @@ package entity
 
 type Product struct {
 	ID            int     `db:"id"`
+	Code          string  `db:"code"`           // Mã sản phẩm (SP00001)
 	Name          string  `db:"name"`           // Tên sản phẩm
 	Cost          float64 `db:"cost"`           // Giá vốn của sản phẩm (VND)
 	CategoryID    *int    `db:"category_id"`    // ID danh mục sản phẩm

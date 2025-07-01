@@ -3,6 +3,7 @@ package repositoryimplement
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/management-app-backend/internal/database"
@@ -87,7 +88,9 @@ func (repo *ProductRepository) GetOneByIDQuery(ctx context.Context, id int, tx *
 }
 
 func (repo *ProductRepository) CreateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO products(name, cost, category_id, unit_id, description, operation_type) VALUES (:name, :cost, :category_id, :unit_id, :description, :operation_type)`
+	// First insert without code (code will be generated after getting ID)
+	insertQuery := `INSERT INTO products(code, name, cost, category_id, unit_id, description, operation_type) 
+					VALUES ('TEMP', :name, :cost, :category_id, :unit_id, :description, :operation_type)`
 
 	var result sql.Result
 	var err error
@@ -102,15 +105,27 @@ func (repo *ProductRepository) CreateCommand(ctx context.Context, product *entit
 		return err
 	}
 
-	// Get the last inserted ID
-	lastID, err := result.LastInsertId()
+	// Get the inserted ID
+	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
+	product.ID = int(id)
 
-	// Set the ID to the product entity
-	product.ID = int(lastID)
-	return nil
+	// Generate code based on ID (SP + 5-digit format)
+	code := fmt.Sprintf("SP%05d", product.ID)
+	product.Code = code
+
+	// Update the record with the generated code
+	updateCodeQuery := `UPDATE products SET code = ? WHERE id = ?`
+
+	if tx != nil {
+		_, err = tx.ExecContext(ctx, updateCodeQuery, code, product.ID)
+	} else {
+		_, err = repo.db.ExecContext(ctx, updateCodeQuery, code, product.ID)
+	}
+
+	return err
 }
 
 func (repo *ProductRepository) UpdateCommand(ctx context.Context, product *entity.Product, tx *sqlx.Tx) error {

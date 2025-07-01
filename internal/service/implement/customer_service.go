@@ -63,6 +63,7 @@ func (s *CustomerService) Create(ctx *gin.Context, request model.CreateCustomerR
 	// Return response
 	return &model.CustomerResponse{
 		ID:      customer.ID,
+		Code:    customer.Code,
 		Name:    customer.Name,
 		Phone:   customer.Phone,
 		Address: customer.Address,
@@ -84,6 +85,7 @@ func (s *CustomerService) Update(ctx *gin.Context, customerID int, request model
 	// Update customer entity - only update non-empty fields
 	customer := &entity.Customer{
 		ID:      customerID,
+		Code:    existingCustomer.Code,
 		Name:    existingCustomer.Name,    // Keep existing value
 		Phone:   existingCustomer.Phone,   // Keep existing value
 		Address: existingCustomer.Address, // Keep existing value
@@ -110,6 +112,7 @@ func (s *CustomerService) Update(ctx *gin.Context, customerID int, request model
 	// Return response
 	return &model.CustomerResponse{
 		ID:      customer.ID,
+		Code:    customer.Code,
 		Name:    customer.Name,
 		Phone:   customer.Phone,
 		Address: customer.Address,
@@ -129,6 +132,7 @@ func (s *CustomerService) GetAll(ctx *gin.Context) (*model.GetAllCustomersRespon
 	for i, customer := range customers {
 		customerResponses[i] = model.CustomerResponse{
 			ID:      customer.ID,
+			Code:    customer.Code,
 			Name:    customer.Name,
 			Phone:   customer.Phone,
 			Address: customer.Address,
@@ -156,6 +160,7 @@ func (s *CustomerService) GetOne(ctx *gin.Context, id int) (*model.GetOneCustome
 	return &model.GetOneCustomerResponse{
 		Customer: model.CustomerResponse{
 			ID:      customer.ID,
+			Code:    customer.Code,
 			Name:    customer.Name,
 			Phone:   customer.Phone,
 			Address: customer.Address,

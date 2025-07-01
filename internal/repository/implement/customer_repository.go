@@ -3,6 +3,7 @@ package repositoryimplement
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/management-app-backend/internal/database"
@@ -63,7 +64,8 @@ func (repo *CustomerRepository) GetOneByIDQuery(ctx context.Context, id int, tx 
 }
 
 func (repo *CustomerRepository) CreateCommand(ctx context.Context, customer *entity.Customer, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO customers(name, phone, address) VALUES (:name, :phone, :address)`
+	// First insert without code (code will be generated after getting ID)
+	insertQuery := `INSERT INTO customers(code, name, phone, address) VALUES ('TEMP', :name, :phone, :address)`
 
 	var result sql.Result
 	var err error
@@ -78,15 +80,27 @@ func (repo *CustomerRepository) CreateCommand(ctx context.Context, customer *ent
 		return err
 	}
 
-	// Get the last inserted ID
-	lastID, err := result.LastInsertId()
+	// Get the inserted ID
+	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
+	customer.ID = int(id)
 
-	// Set the ID to the customer entity
-	customer.ID = int(lastID)
-	return nil
+	// Generate code based on ID (KH + 5-digit format)
+	code := fmt.Sprintf("KH%05d", customer.ID)
+	customer.Code = code
+
+	// Update the record with the generated code
+	updateCodeQuery := `UPDATE customers SET code = ? WHERE id = ?`
+
+	if tx != nil {
+		_, err = tx.ExecContext(ctx, updateCodeQuery, code, customer.ID)
+	} else {
+		_, err = repo.db.ExecContext(ctx, updateCodeQuery, code, customer.ID)
+	}
+
+	return err
 }
 
 func (repo *CustomerRepository) UpdateCommand(ctx context.Context, customer *entity.Customer, tx *sqlx.Tx) error {

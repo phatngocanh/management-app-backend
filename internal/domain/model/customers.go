@@ -14,6 +14,7 @@ type UpdateCustomerRequest struct {
 
 type CustomerResponse struct {
 	ID      int    `json:"id"`
+	Code    string `json:"code"`    // Mã khách hàng (KH00001)
 	Name    string `json:"name"`    // Tên khách hàng
 	Phone   string `json:"phone"`   // Số điện thoại
 	Address string `json:"address"` // Địa chỉ
