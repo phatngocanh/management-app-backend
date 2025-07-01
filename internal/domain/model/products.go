@@ -21,17 +21,18 @@ type UpdateProductRequest struct {
 
 type ProductResponse struct {
 	ID            int                      `json:"id"`
-	Name          string                   `json:"name"`                   // Tên sản phẩm
-	Cost          float64                  `json:"cost"`                   // Giá vốn của sản phẩm (VND)
-	CategoryID    *int                     `json:"category_id"`            // ID danh mục sản phẩm
-	UnitID        *int                     `json:"unit_id"`                // ID đơn vị tính
-	Description   string                   `json:"description"`            // Mô tả chi tiết sản phẩm
-	OperationType string                   `json:"operation_type"`         // Loại sản phẩm: MANUFACTURING, PACKAGING hoặc PURCHASE
-	Category      *ProductCategoryResponse `json:"category,omitempty"`     // Thông tin danh mục
-	Unit          *UnitOfMeasureResponse   `json:"unit,omitempty"`         // Thông tin đơn vị tính
-	Inventory     *InventoryInfo           `json:"inventory,omitempty"`    // Thông tin tồn kho
-	BOM           *ProductBOMInfo          `json:"bom,omitempty"`          // Thông tin công thức sản xuất (nếu có)
-	UsedInBOMs    []ProductBOMUsage        `json:"used_in_boms,omitempty"` // Danh sách sản phẩm sử dụng sản phẩm này làm nguyên liệu
+	Name          string                   `json:"name"`               // Tên sản phẩm
+	Cost          float64                  `json:"cost"`               // Giá vốn của sản phẩm (VND)
+	CategoryID    *int                     `json:"category_id"`        // ID danh mục sản phẩm
+	UnitID        *int                     `json:"unit_id"`            // ID đơn vị tính
+	Description   string                   `json:"description"`        // Mô tả chi tiết sản phẩm
+	OperationType string                   `json:"operation_type"`     // Loại sản phẩm: MANUFACTURING, PACKAGING hoặc PURCHASE
+	Category      *ProductCategoryResponse `json:"category,omitempty"` // Thông tin danh mục sản phẩm
+	Unit          *UnitOfMeasureResponse   `json:"unit,omitempty"`     // Thông tin đơn vị tính
+	Inventory     *InventoryInfo           `json:"inventory,omitempty"`
+	Bom           *ProductBOMInfo          `json:"bom,omitempty"`
+	UsedInBoms    []ProductBOMUsage        `json:"used_in_boms,omitempty"`
+	Images        []ProductImageResponse   `json:"images,omitempty"` // Danh sách hình ảnh sản phẩm
 }
 
 // BOM information when getting product details

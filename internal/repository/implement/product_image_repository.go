@@ -64,7 +64,7 @@ func (repo *ProductImageRepository) GetOneByIDQuery(ctx context.Context, id int,
 
 func (repo *ProductImageRepository) GetByProductIDQuery(ctx context.Context, productID int, tx *sqlx.Tx) ([]entity.ProductImage, error) {
 	var images []entity.ProductImage
-	query := "SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, id"
+	query := "SELECT * FROM product_images WHERE product_id = ? ORDER BY id"
 	var err error
 
 	if tx != nil {
@@ -85,7 +85,7 @@ func (repo *ProductImageRepository) GetByProductIDQuery(ctx context.Context, pro
 }
 
 func (repo *ProductImageRepository) CreateCommand(ctx context.Context, image *entity.ProductImage, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO product_images(product_id, image_url, image_key, is_primary) VALUES (:product_id, :image_url, :image_key, :is_primary)`
+	insertQuery := `INSERT INTO product_images(product_id, image_key) VALUES (:product_id, :image_key)`
 
 	var result sql.Result
 	var err error
@@ -112,7 +112,7 @@ func (repo *ProductImageRepository) CreateCommand(ctx context.Context, image *en
 }
 
 func (repo *ProductImageRepository) UpdateCommand(ctx context.Context, image *entity.ProductImage, tx *sqlx.Tx) error {
-	updateQuery := `UPDATE product_images SET product_id = :product_id, image_url = :image_url, image_key = :image_key, is_primary = :is_primary WHERE id = :id`
+	updateQuery := `UPDATE product_images SET product_id = :product_id, image_key = :image_key WHERE id = :id`
 
 	if tx != nil {
 		_, err := tx.NamedExecContext(ctx, updateQuery, image)

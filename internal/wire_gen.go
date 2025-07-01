@@ -36,7 +36,9 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	unitOfMeasureRepository := repositoryimplement.NewUnitOfMeasureRepository(db)
 	productBomRepository := repositoryimplement.NewProductBomRepository(db)
 	unitOfWork := repositoryimplement.NewUnitOfWork(db)
-	productService := serviceimplement.NewProductService(productRepository, inventoryRepository, productCategoryRepository, unitOfMeasureRepository, productBomRepository, unitOfWork)
+	productImageRepository := repositoryimplement.NewProductImageRepository(db)
+	s3Service := beanimplement.NewS3Service()
+	productService := serviceimplement.NewProductService(productRepository, inventoryRepository, productCategoryRepository, unitOfMeasureRepository, productBomRepository, unitOfWork, productImageRepository, s3Service)
 	productHandler := v1.NewProductHandler(productService)
 	productBomService := serviceimplement.NewProductBomService(productBomRepository, productRepository, productCategoryRepository, unitOfMeasureRepository, unitOfWork)
 	productBomHandler := v1.NewProductBomHandler(productBomService)
@@ -58,7 +60,9 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	customerHandler := v1.NewCustomerHandler(customerService)
 	statisticsService := serviceimplement.NewStatisticsService(productRepository, customerRepository, inventoryRepository)
 	statisticsHandler := v1.NewStatisticsHandler(statisticsService)
-	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, productBomHandler, productCategoryHandler, unitOfMeasureHandler, inventoryHandler, inventoryHistoryHandler, inventoryReceiptHandler, customerHandler, statisticsHandler)
+	productImageService := serviceimplement.NewProductImageService(productImageRepository, unitOfWork, s3Service)
+	productImageHandler := v1.NewProductImageHandler(productImageService)
+	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, productBomHandler, productCategoryHandler, unitOfMeasureHandler, inventoryHandler, inventoryHistoryHandler, inventoryReceiptHandler, customerHandler, statisticsHandler, productImageHandler)
 	apiContainer := controller.NewApiContainer(server)
 	return apiContainer
 }
@@ -71,7 +75,7 @@ var container = wire.NewSet(controller.NewApiContainer)
 var serverSet = wire.NewSet(http.NewServer)
 
 // handler === controller | with service and repository layers to form 3 layers architecture
-var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewProductBomHandler, v1.NewProductCategoryHandler, v1.NewUnitOfMeasureHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewStatisticsHandler, v1.NewInventoryReceiptHandler)
+var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewProductBomHandler, v1.NewProductCategoryHandler, v1.NewUnitOfMeasureHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewStatisticsHandler, v1.NewInventoryReceiptHandler, v1.NewProductImageHandler)
 
 var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewStatisticsService, serviceimplement.NewUnitOfMeasureService, serviceimplement.NewProductCategoryService, serviceimplement.NewProductImageService, serviceimplement.NewProductBomService, serviceimplement.NewInventoryReceiptService)
 

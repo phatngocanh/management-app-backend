@@ -20,6 +20,7 @@ func MapRoutes(router *gin.Engine,
 	inventoryReceiptHandler *InventoryReceiptHandler,
 	customerHandler *CustomerHandler,
 	statisticsHandler *StatisticsHandler,
+	productImageHandler *ProductImageHandler,
 	authMiddleware *middleware.AuthMiddleware,
 ) {
 	// Apply CORS middleware to all routes
@@ -48,6 +49,8 @@ func MapRoutes(router *gin.Engine,
 			products.GET("/:productId/inventories", authMiddleware.VerifyAccessToken, inventoryHandler.GetByProductID)
 			products.PUT("/:productId/inventories/quantity", authMiddleware.VerifyAccessToken, inventoryHandler.UpdateQuantity)
 			products.GET("/:productId/inventories/histories", authMiddleware.VerifyAccessToken, inventoryHistoryHandler.GetAll)
+			products.POST("/:productId/images/upload-url", authMiddleware.VerifyAccessToken, productImageHandler.GenerateSignedUploadURL)
+			products.DELETE("/:productId/images/:imageId", authMiddleware.VerifyAccessToken, productImageHandler.DeleteImage)
 		}
 		boms := v1.Group("/boms")
 		{

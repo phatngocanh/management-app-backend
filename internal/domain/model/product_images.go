@@ -3,14 +3,12 @@ package model
 type CreateProductImageRequest struct {
 	ProductID int    `json:"product_id" binding:"required"` // ID sản phẩm
 	ImageKey  string `json:"image_key" binding:"required"`  // S3 object key
-	IsPrimary bool   `json:"is_primary"`                    // Hình ảnh chính hay không
 }
 
 type UpdateProductImageRequest struct {
 	ID        int    `json:"id" binding:"required"`
 	ProductID int    `json:"product_id" binding:"required"` // ID sản phẩm
 	ImageKey  string `json:"image_key" binding:"required"`  // S3 object key
-	IsPrimary bool   `json:"is_primary"`                    // Hình ảnh chính hay không
 }
 
 type ProductImageResponse struct {
@@ -18,7 +16,6 @@ type ProductImageResponse struct {
 	ProductID int    `json:"product_id"` // ID sản phẩm
 	ImageURL  string `json:"image_url"`  // URL hình ảnh signed (generated on demand)
 	ImageKey  string `json:"image_key"`  // S3 object key
-	IsPrimary bool   `json:"is_primary"` // Hình ảnh chính hay không
 }
 
 type GenerateProductImageSignedUploadURLResponse struct {

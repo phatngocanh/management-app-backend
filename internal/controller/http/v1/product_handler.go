@@ -84,6 +84,7 @@ func (h *ProductHandler) Update(ctx *gin.Context) {
 // @Param  Authorization header string true "Authorization: Bearer"
 // @Param category query string false "Category IDs comma-separated (e.g., 1,2,3)"
 // @Param operationType query string false "Operation type (e.g., 'PURCHASE', 'MANUFACTURE', 'PACKAGING')"
+// @Param noBom query bool false "Skip BOM information to improve performance"
 // @Success 200 {object} httpcommon.HttpResponse[model.GetAllProductsResponse]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
 // @Router /products [get]
@@ -91,8 +92,9 @@ func (h *ProductHandler) GetAll(ctx *gin.Context) {
 	// Get category filter from query parameter
 	categoryParam := ctx.Query("category")
 	operationType := ctx.Query("operationType")
+	noBom := ctx.Query("noBom") == "true"
 
-	response, errCode := h.productService.GetAll(ctx, categoryParam, operationType)
+	response, errCode := h.productService.GetAll(ctx, categoryParam, operationType, noBom)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

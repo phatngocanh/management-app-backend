@@ -7,37 +7,38 @@ import (
 	"github.com/gin-gonic/gin"
 	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
 	"github.com/pna/management-app-backend/internal/service"
+	"github.com/pna/management-app-backend/internal/utils/env"
 	"github.com/pna/management-app-backend/internal/utils/error_utils"
 )
 
-type OrderImageHandler struct {
-	orderImageService service.OrderImageService
+type ProductImageHandler struct {
+	productImageService service.ProductImageService
 }
 
-func NewOrderImageHandler(orderImageService service.OrderImageService) *OrderImageHandler {
-	return &OrderImageHandler{
-		orderImageService: orderImageService,
+func NewProductImageHandler(productImageService service.ProductImageService) *ProductImageHandler {
+	return &ProductImageHandler{
+		productImageService: productImageService,
 	}
 }
 
 // @Summary Generate Signed Upload URL
 // @Description Generate a signed URL for uploading an image to S3
-// @Tags Order Images
+// @Tags Product Images
 // @Produce json
 // @Param  Authorization header string true "Authorization: Bearer"
-// @Param orderId path int true "Order ID"
+// @Param productId path int true "Product ID"
 // @Param fileName query string true "File name"
 // @Param contentType query string true "Content type (e.g., image/jpeg)"
-// @Success 200 {object} httpcommon.HttpResponse[model.GenerateSignedUploadURLResponse]
+// @Success 200 {object} httpcommon.HttpResponse[model.GenerateProductImageSignedUploadURLResponse]
 // @Failure 400 {object} httpcommon.HttpResponse[any]
 // @Failure 401 {object} httpcommon.HttpResponse[any]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
-// @Router /orders/{orderId}/images/upload-url [post]
-func (h *OrderImageHandler) GenerateSignedUploadURL(ctx *gin.Context) {
-	// Get order ID from path parameter
-	orderID, err := strconv.Atoi(ctx.Param("orderId"))
+// @Router /products/{productId}/images/upload-url [post]
+func (h *ProductImageHandler) GenerateSignedUploadURL(ctx *gin.Context) {
+	// Get product ID from path parameter
+	productID, err := strconv.Atoi(ctx.Param("productId"))
 	if err != nil {
-		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "orderId")
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "productId")
 		ctx.JSON(statusCode, errResponse)
 		return
 	}
@@ -57,8 +58,14 @@ func (h *OrderImageHandler) GenerateSignedUploadURL(ctx *gin.Context) {
 		return
 	}
 
+	prefix, err := env.GetEnv("AWS_S3_PRODUCT_IMAGES_PREFIX")
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.INTERNAL_SERVER_ERROR, "AWS_S3_PRODUCT_IMAGES_PREFIX is not set")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
 	// Generate signed upload URL
-	response, errCode := h.orderImageService.GenerateSignedUploadURL(ctx, orderID, fileName, contentType)
+	response, errCode := h.productImageService.GenerateSignedUploadURL(ctx, productID, fileName, contentType, prefix)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)
@@ -68,20 +75,20 @@ func (h *OrderImageHandler) GenerateSignedUploadURL(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
 }
 
-// @Summary Delete Order Image
-// @Description Delete a specific image from an order
-// @Tags Order Images
+// @Summary Delete Product Image
+// @Description Delete a specific image from a product
+// @Tags Product Images
 // @Produce json
 // @Param  Authorization header string true "Authorization: Bearer"
-// @Param orderId path int true "Order ID"
+// @Param productId path int true "Product ID"
 // @Param imageId path int true "Image ID"
 // @Success 200 {object} httpcommon.HttpResponse[any]
 // @Failure 400 {object} httpcommon.HttpResponse[any]
 // @Failure 401 {object} httpcommon.HttpResponse[any]
 // @Failure 404 {object} httpcommon.HttpResponse[any]
 // @Failure 500 {object} httpcommon.HttpResponse[any]
-// @Router /orders/{orderId}/images/{imageId} [delete]
-func (h *OrderImageHandler) DeleteImage(ctx *gin.Context) {
+// @Router /products/{productId}/images/{imageId} [delete]
+func (h *ProductImageHandler) DeleteImage(ctx *gin.Context) {
 	// Get image ID from path parameter
 	imageID, err := strconv.Atoi(ctx.Param("imageId"))
 	if err != nil {
@@ -91,7 +98,7 @@ func (h *OrderImageHandler) DeleteImage(ctx *gin.Context) {
 	}
 
 	// Delete the image
-	errCode := h.orderImageService.DeleteImage(ctx, imageID)
+	errCode := h.productImageService.Delete(ctx, imageID)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

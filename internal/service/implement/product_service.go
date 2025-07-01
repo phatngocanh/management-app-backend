@@ -1,8 +1,11 @@
 package serviceimplement
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/pna/management-app-backend/internal/bean"
 	"github.com/pna/management-app-backend/internal/domain/entity"
 	"github.com/pna/management-app-backend/internal/domain/model"
 	"github.com/pna/management-app-backend/internal/repository"
@@ -12,12 +15,14 @@ import (
 )
 
 type ProductService struct {
-	productRepository   repository.ProductRepository
-	inventoryRepository repository.InventoryRepository
-	categoryRepository  repository.ProductCategoryRepository
-	unitRepository      repository.UnitOfMeasureRepository
-	bomRepository       repository.ProductBomRepository
-	unitOfWork          repository.UnitOfWork
+	productRepository      repository.ProductRepository
+	inventoryRepository    repository.InventoryRepository
+	categoryRepository     repository.ProductCategoryRepository
+	unitRepository         repository.UnitOfMeasureRepository
+	bomRepository          repository.ProductBomRepository
+	unitOfWork             repository.UnitOfWork
+	productImageRepository repository.ProductImageRepository
+	s3Service              bean.S3Service
 }
 
 func NewProductService(
@@ -27,19 +32,27 @@ func NewProductService(
 	unitRepository repository.UnitOfMeasureRepository,
 	bomRepository repository.ProductBomRepository,
 	unitOfWork repository.UnitOfWork,
+	productImageRepository repository.ProductImageRepository,
+	s3Service bean.S3Service,
 ) service.ProductService {
 	return &ProductService{
-		productRepository:   productRepository,
-		inventoryRepository: inventoryRepository,
-		categoryRepository:  categoryRepository,
-		unitRepository:      unitRepository,
-		bomRepository:       bomRepository,
-		unitOfWork:          unitOfWork,
+		productRepository:      productRepository,
+		inventoryRepository:    inventoryRepository,
+		categoryRepository:     categoryRepository,
+		unitRepository:         unitRepository,
+		bomRepository:          bomRepository,
+		unitOfWork:             unitOfWork,
+		productImageRepository: productImageRepository,
+		s3Service:              s3Service,
 	}
 }
 
 // Helper function to build complete ProductResponse with all related information
 func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.Product) (*model.ProductResponse, string) {
+	return s.buildProductResponseWithOptions(ctx, product, false)
+}
+
+func (s *ProductService) buildProductResponseWithOptions(ctx *gin.Context, product *entity.Product, noBom bool) (*model.ProductResponse, string) {
 	response := &model.ProductResponse{
 		ID:            product.ID,
 		Name:          product.Name,
@@ -85,72 +98,97 @@ func (s *ProductService) buildProductResponse(ctx *gin.Context, product *entity.
 		}
 	}
 
-	// Get BOM info (if this product can be built from other products)
-	bomEntries, err := s.bomRepository.GetByParentProductIDQuery(ctx, product.ID, nil)
-	if err == nil && len(bomEntries) > 0 {
-		bomComponents := make([]model.BomComponentResponse, len(bomEntries))
-		for i, bomEntry := range bomEntries {
-			// Get component product info
-			componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bomEntry.ComponentProductID, nil)
+	// Skip BOM info if noBom is true (for performance optimization)
+	if !noBom {
+		// Get BOM info (if this product can be built from other products)
+		bomEntries, err := s.bomRepository.GetByParentProductIDQuery(ctx, product.ID, nil)
+		if err == nil && len(bomEntries) > 0 {
+			bomComponents := make([]model.BomComponentResponse, len(bomEntries))
+			for i, bomEntry := range bomEntries {
+				// Get component product info
+				componentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, bomEntry.ComponentProductID, nil)
 
-			bomComponents[i] = model.BomComponentResponse{
-				ID:                 bomEntry.ID,
-				ComponentProductID: bomEntry.ComponentProductID,
-				Quantity:           bomEntry.Quantity,
+				bomComponents[i] = model.BomComponentResponse{
+					ID:                 bomEntry.ID,
+					ComponentProductID: bomEntry.ComponentProductID,
+					Quantity:           bomEntry.Quantity,
+				}
+
+				if componentProduct != nil {
+					// Get unit and category info for component
+					unitName := ""
+					categoryCode := ""
+
+					if componentProduct.UnitID != nil {
+						unit, _ := s.unitRepository.GetOneByIDQuery(ctx, *componentProduct.UnitID, nil)
+						if unit != nil {
+							unitName = unit.Name
+						}
+					}
+
+					if componentProduct.CategoryID != nil {
+						category, _ := s.categoryRepository.GetOneByIDQuery(ctx, *componentProduct.CategoryID, nil)
+						if category != nil {
+							categoryCode = category.Code
+						}
+					}
+
+					bomComponents[i].ComponentProduct = &model.ProductBomInfo{
+						ID:           componentProduct.ID,
+						Name:         componentProduct.Name,
+						Cost:         componentProduct.Cost,
+						UnitName:     unitName,
+						CategoryCode: categoryCode,
+					}
+				}
 			}
 
-			if componentProduct != nil {
-				// Get unit and category info for component
-				unitName := ""
-				categoryCode := ""
-
-				if componentProduct.UnitID != nil {
-					unit, _ := s.unitRepository.GetOneByIDQuery(ctx, *componentProduct.UnitID, nil)
-					if unit != nil {
-						unitName = unit.Name
-					}
-				}
-
-				if componentProduct.CategoryID != nil {
-					category, _ := s.categoryRepository.GetOneByIDQuery(ctx, *componentProduct.CategoryID, nil)
-					if category != nil {
-						categoryCode = category.Code
-					}
-				}
-
-				bomComponents[i].ComponentProduct = &model.ProductBomInfo{
-					ID:           componentProduct.ID,
-					Name:         componentProduct.Name,
-					Cost:         componentProduct.Cost,
-					UnitName:     unitName,
-					CategoryCode: categoryCode,
-				}
+			response.Bom = &model.ProductBOMInfo{
+				TotalComponents: len(bomComponents),
+				Components:      bomComponents,
 			}
 		}
 
-		response.BOM = &model.ProductBOMInfo{
-			TotalComponents: len(bomComponents),
-			Components:      bomComponents,
+		// Get usage info (where this product is used as component)
+		usageEntries, err := s.bomRepository.GetByComponentProductIDQuery(ctx, product.ID, nil)
+		if err == nil && len(usageEntries) > 0 {
+			usageInfo := make([]model.ProductBOMUsage, len(usageEntries))
+			for i, usageEntry := range usageEntries {
+				parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, usageEntry.ParentProductID, nil)
+
+				usageInfo[i] = model.ProductBOMUsage{
+					ParentProductID: usageEntry.ParentProductID,
+					Quantity:        usageEntry.Quantity,
+				}
+
+				if parentProduct != nil {
+					usageInfo[i].ParentProductName = parentProduct.Name
+				}
+			}
+			response.UsedInBoms = usageInfo
 		}
 	}
 
-	// Get usage info (where this product is used as component)
-	usageEntries, err := s.bomRepository.GetByComponentProductIDQuery(ctx, product.ID, nil)
-	if err == nil && len(usageEntries) > 0 {
-		usageInfo := make([]model.ProductBOMUsage, len(usageEntries))
-		for i, usageEntry := range usageEntries {
-			parentProduct, _ := s.productRepository.GetOneByIDQuery(ctx, usageEntry.ParentProductID, nil)
-
-			usageInfo[i] = model.ProductBOMUsage{
-				ParentProductID: usageEntry.ParentProductID,
-				Quantity:        usageEntry.Quantity,
+	// Get product images
+	images, err := s.productImageRepository.GetByProductIDQuery(ctx, product.ID, nil)
+	if err == nil && len(images) > 0 {
+		imageResponses := make([]model.ProductImageResponse, len(images))
+		for i, image := range images {
+			// Generate signed URL for response
+			signedURL, err := s.s3Service.GenerateSignedDownloadURL(ctx, image.ImageKey, 20*time.Minute)
+			if err != nil {
+				log.Error("ProductService.buildProductResponse Error generating signed URL: " + err.Error())
+				signedURL = "" // Continue without signed URL
 			}
 
-			if parentProduct != nil {
-				usageInfo[i].ParentProductName = parentProduct.Name
+			imageResponses[i] = model.ProductImageResponse{
+				ID:        image.ID,
+				ProductID: image.ProductID,
+				ImageURL:  signedURL,
+				ImageKey:  image.ImageKey,
 			}
 		}
-		response.UsedInBOMs = usageInfo
+		response.Images = imageResponses
 	}
 
 	return response, ""
@@ -256,7 +294,7 @@ func (s *ProductService) Update(ctx *gin.Context, request model.UpdateProductReq
 	return response, ""
 }
 
-func (s *ProductService) GetAll(ctx *gin.Context, categoryFilter string, operationTypeFilter string) (*model.GetAllProductsResponse, string) {
+func (s *ProductService) GetAll(ctx *gin.Context, categoryFilter string, operationTypeFilter string, noBom bool) (*model.GetAllProductsResponse, string) {
 	// Get all products with category filter
 	products, err := s.productRepository.GetAllQuery(ctx, categoryFilter, operationTypeFilter, nil)
 	if err != nil {
@@ -267,7 +305,7 @@ func (s *ProductService) GetAll(ctx *gin.Context, categoryFilter string, operati
 	// Convert to response models with complete info
 	productResponses := make([]model.ProductResponse, len(products))
 	for i, product := range products {
-		response, errCode := s.buildProductResponse(ctx, &product)
+		response, errCode := s.buildProductResponseWithOptions(ctx, &product, noBom)
 		if errCode != "" {
 			log.Error("ProductService.GetAll Error when build product response for product " + string(rune(product.ID)) + ": " + errCode)
 			// Continue with basic info if detailed info fails
