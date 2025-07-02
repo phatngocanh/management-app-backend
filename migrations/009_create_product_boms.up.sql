@@ -1,8 +1,8 @@
 CREATE TABLE `product_boms` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `parent_product_id` int NOT NULL COMMENT 'The finished product that is built',
-  `component_product_id` int NOT NULL COMMENT 'The component/material needed',
-  `quantity` decimal(10,3) NOT NULL COMMENT 'How many units of component needed to make 1 unit of parent',
+  `parent_product_id` int NOT NULL COMMENT 'Sản phẩm thành phẩm được tạo ra',
+  `component_product_id` int NOT NULL COMMENT 'Nguyên liệu/linh kiện cần thiết',
+  `quantity` decimal(10,3) NOT NULL COMMENT 'Số lượng đơn vị nguyên liệu cần để tạo 1 đơn vị sản phẩm thành phẩm',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
