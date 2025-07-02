@@ -62,7 +62,11 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	statisticsHandler := v1.NewStatisticsHandler(statisticsService)
 	productImageService := serviceimplement.NewProductImageService(productImageRepository, unitOfWork, s3Service)
 	productImageHandler := v1.NewProductImageHandler(productImageService)
-	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, productBomHandler, productCategoryHandler, unitOfMeasureHandler, inventoryHandler, inventoryHistoryHandler, inventoryReceiptHandler, customerHandler, statisticsHandler, productImageHandler)
+	orderRepository := repositoryimplement.NewOrderRepository(db)
+	orderItemRepository := repositoryimplement.NewOrderItemRepository(db)
+	orderService := serviceimplement.NewOrderService(orderRepository, inventoryRepository, orderItemRepository, productRepository, productBomRepository, unitOfWork)
+	orderHandler := v1.NewOrderHandler(orderService)
+	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, productBomHandler, productCategoryHandler, unitOfMeasureHandler, inventoryHandler, inventoryHistoryHandler, inventoryReceiptHandler, customerHandler, statisticsHandler, productImageHandler, orderHandler)
 	apiContainer := controller.NewApiContainer(server)
 	return apiContainer
 }
@@ -75,11 +79,11 @@ var container = wire.NewSet(controller.NewApiContainer)
 var serverSet = wire.NewSet(http.NewServer)
 
 // handler === controller | with service and repository layers to form 3 layers architecture
-var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewProductBomHandler, v1.NewProductCategoryHandler, v1.NewUnitOfMeasureHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewStatisticsHandler, v1.NewInventoryReceiptHandler, v1.NewProductImageHandler)
+var handlerSet = wire.NewSet(v1.NewHealthHandler, v1.NewHelloWorldHandler, v1.NewUserHandler, v1.NewProductHandler, v1.NewProductBomHandler, v1.NewProductCategoryHandler, v1.NewUnitOfMeasureHandler, v1.NewInventoryHandler, v1.NewInventoryHistoryHandler, v1.NewCustomerHandler, v1.NewStatisticsHandler, v1.NewInventoryReceiptHandler, v1.NewProductImageHandler, v1.NewOrderHandler)
 
-var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewStatisticsService, serviceimplement.NewUnitOfMeasureService, serviceimplement.NewProductCategoryService, serviceimplement.NewProductImageService, serviceimplement.NewProductBomService, serviceimplement.NewInventoryReceiptService)
+var serviceSet = wire.NewSet(serviceimplement.NewHelloWorldService, serviceimplement.NewUserService, serviceimplement.NewProductService, serviceimplement.NewInventoryService, serviceimplement.NewInventoryHistoryService, serviceimplement.NewCustomerService, serviceimplement.NewStatisticsService, serviceimplement.NewUnitOfMeasureService, serviceimplement.NewProductCategoryService, serviceimplement.NewProductImageService, serviceimplement.NewProductBomService, serviceimplement.NewInventoryReceiptService, serviceimplement.NewOrderService)
 
-var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewInventoryHistoryRepository, repositoryimplement.NewUnitOfWork, repositoryimplement.NewCustomerRepository, repositoryimplement.NewUnitOfMeasureRepository, repositoryimplement.NewProductCategoryRepository, repositoryimplement.NewProductImageRepository, repositoryimplement.NewProductBomRepository, repositoryimplement.NewInventoryReceiptRepository, repositoryimplement.NewInventoryReceiptItemRepository)
+var repositorySet = wire.NewSet(repositoryimplement.NewHelloWorldRepository, repositoryimplement.NewUserRepository, repositoryimplement.NewProductRepository, repositoryimplement.NewInventoryRepository, repositoryimplement.NewInventoryHistoryRepository, repositoryimplement.NewUnitOfWork, repositoryimplement.NewCustomerRepository, repositoryimplement.NewUnitOfMeasureRepository, repositoryimplement.NewProductCategoryRepository, repositoryimplement.NewProductImageRepository, repositoryimplement.NewProductBomRepository, repositoryimplement.NewInventoryReceiptRepository, repositoryimplement.NewInventoryReceiptItemRepository, repositoryimplement.NewOrderRepository, repositoryimplement.NewOrderItemRepository)
 
 var middlewareSet = wire.NewSet(middleware.NewAuthMiddleware)
 
