@@ -6,5 +6,6 @@ import (
 )
 
 type OrderService interface {
-	CreateOrder(ctx *gin.Context, orderRequest model.CreateOrderRequest) (*model.OrderResponse, string)
+	CreateOrder(ctx *gin.Context, orderRequest model.CreateOrderRequest, userId int) (*model.OrderResponse, string)
+	GetOneOrder(ctx *gin.Context, orderID int) (model.GetOneOrderResponse, string)
 }

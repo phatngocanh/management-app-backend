@@ -76,7 +76,7 @@ func (repo *OrderItemRepository) GetOneByIDQuery(ctx context.Context, id int, tx
 	return &item, nil
 }
 
-func (repo *OrderItemRepository) GetByOrderIDQuery(ctx context.Context, orderID int, tx *sqlx.Tx) ([]entity.OrderItem, error) {
+func (repo *OrderItemRepository) GetAllByOrderIDQuery(ctx context.Context, orderID int, tx *sqlx.Tx) ([]entity.OrderItem, error) {
 	var items []entity.OrderItem
 	query := "SELECT * FROM order_items WHERE order_id = ? ORDER BY id"
 	var err error

@@ -44,9 +44,9 @@ type ProductBOMInfo struct {
 
 // Information about where this product is used as component
 type ProductBOMUsage struct {
-	ParentProductID   int     `json:"parent_product_id"`   // ID sản phẩm thành phẩm
-	ParentProductName string  `json:"parent_product_name"` // Tên sản phẩm thành phẩm
-	Quantity          float64 `json:"quantity"`            // Số lượng cần thiết
+	ParentProductID   int    `json:"parent_product_id"`   // ID sản phẩm thành phẩm
+	ParentProductName string `json:"parent_product_name"` // Tên sản phẩm thành phẩm
+	Quantity          int    `json:"quantity"`            // Số lượng cần thiết
 }
 
 type InventoryInfo struct {

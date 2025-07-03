@@ -2,8 +2,10 @@ package v1
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pna/management-app-backend/internal/controller/http/middleware"
 	httpcommon "github.com/pna/management-app-backend/internal/domain/http_common"
 	"github.com/pna/management-app-backend/internal/domain/model"
 	"github.com/pna/management-app-backend/internal/service"
@@ -40,7 +42,9 @@ func (h *OrderHandler) CreateOrder(ctx *gin.Context) {
 		return
 	}
 
-	response, errorCode := h.orderService.CreateOrder(ctx, request)
+	userID := middleware.GetUserIdHelper(ctx)
+
+	response, errorCode := h.orderService.CreateOrder(ctx, request, userID)
 	if errorCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errorCode, "")
 		ctx.JSON(statusCode, errResponse)
@@ -48,4 +52,35 @@ func (h *OrderHandler) CreateOrder(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, httpcommon.NewSuccessResponse(response))
+}
+
+// @Summary Get One Order
+// @Description Get one order by id
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Authorization: Bearer"
+// @Param id path int true "Order ID"
+// @Success 200 {object} httpcommon.HttpResponse[model.OrderResponse]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /orders/{orderId} [get]
+func (h *OrderHandler) GetOneOrder(ctx *gin.Context) {
+	id := ctx.Param("orderId")
+	orderID, err := strconv.Atoi(id)
+
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "customerId")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	response, errCode := h.orderService.GetOneOrder(ctx, orderID)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
 }

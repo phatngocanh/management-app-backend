@@ -1,0 +1,2 @@
+-- Change quantity field from decimal(10,3) to int in product_boms table
+ALTER TABLE `product_boms` MODIFY COLUMN `quantity` int NOT NULL COMMENT 'Số lượng đơn vị nguyên liệu cần để tạo 1 đơn vị sản phẩm thành phẩm'; 

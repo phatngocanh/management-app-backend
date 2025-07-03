@@ -78,10 +78,8 @@ func (s *ProductBomService) Create(ctx *gin.Context, request model.CreateProduct
 
 	// Defer rollback in case of error
 	defer func() {
-		if err != nil {
-			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
-				log.Error("ProductBomService.Create Error when rollback transaction: " + rollbackErr.Error())
-			}
+		if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+			log.Error("ProductBomService.Create Error when rollback transaction: " + rollbackErr.Error())
 		}
 	}()
 
@@ -157,10 +155,8 @@ func (s *ProductBomService) Update(ctx *gin.Context, request model.UpdateProduct
 
 	// Defer rollback in case of error
 	defer func() {
-		if err != nil {
-			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
-				log.Error("ProductBomService.Update Error when rollback transaction: " + rollbackErr.Error())
-			}
+		if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+			log.Error("ProductBomService.Update Error when rollback transaction: " + rollbackErr.Error())
 		}
 	}()
 
@@ -387,10 +383,8 @@ func (s *ProductBomService) DeleteByParentProductID(ctx *gin.Context, parentProd
 
 	// Defer rollback in case of error
 	defer func() {
-		if err != nil {
-			if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
-				log.Error("ProductBomService.DeleteByParentProductID Error when rollback transaction: " + rollbackErr.Error())
-			}
+		if rollbackErr := s.unitOfWork.Rollback(tx); rollbackErr != nil {
+			log.Error("ProductBomService.DeleteByParentProductID Error when rollback transaction: " + rollbackErr.Error())
 		}
 	}()
 
@@ -436,7 +430,7 @@ func (s *ProductBomService) CalculateMaterialRequirements(ctx *gin.Context, requ
 	}
 
 	// Map to accumulate material requirements by product ID
-	materialMap := make(map[int]float64)
+	materialMap := make(map[int]int)
 
 	// Recursively calculate material requirements
 	err = s.calculateRequirementsRecursive(ctx, request.ParentProductID, request.Quantity, materialMap)
@@ -483,7 +477,7 @@ func (s *ProductBomService) CalculateMaterialRequirements(ctx *gin.Context, requ
 }
 
 // Helper function to recursively calculate material requirements
-func (s *ProductBomService) calculateRequirementsRecursive(ctx *gin.Context, productID int, quantity float64, materialMap map[int]float64) error {
+func (s *ProductBomService) calculateRequirementsRecursive(ctx *gin.Context, productID int, quantity int, materialMap map[int]int) error {
 	// Get BOM for this product
 	boms, err := s.bomRepository.GetByParentProductIDQuery(ctx, productID, nil)
 	if err != nil {

@@ -103,6 +103,7 @@ func MapRoutes(router *gin.Engine,
 		orders := v1.Group("/orders")
 		{
 			orders.POST("", authMiddleware.VerifyAccessToken, orderHandler.CreateOrder)
+			orders.GET("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.GetOneOrder)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

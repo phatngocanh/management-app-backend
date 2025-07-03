@@ -56,6 +56,7 @@ var serviceSet = wire.NewSet(
 	serviceimplement.NewProductBomService,
 	serviceimplement.NewInventoryReceiptService,
 	serviceimplement.NewOrderService,
+	serviceimplement.NewOrderImageService,
 )
 
 var repositorySet = wire.NewSet(
@@ -74,6 +75,7 @@ var repositorySet = wire.NewSet(
 	repositoryimplement.NewInventoryReceiptItemRepository,
 	repositoryimplement.NewOrderRepository,
 	repositoryimplement.NewOrderItemRepository,
+	repositoryimplement.NewOrderImageRepository,
 )
 
 var middlewareSet = wire.NewSet(

@@ -28,12 +28,12 @@ func getAccessToken(c *gin.Context) (token string) {
 	return accessToken
 }
 
-func GetUserIdHelper(c *gin.Context) int64 {
+func GetUserIdHelper(c *gin.Context) int {
 	userId, exists := c.Get("userId")
 	if !exists {
 		return 0
 	}
-	return userId.(int64)
+	return int(userId.(int64))
 }
 
 func (a *AuthMiddleware) VerifyAccessToken(c *gin.Context) {
