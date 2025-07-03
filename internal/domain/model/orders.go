@@ -36,8 +36,7 @@ type UpdateOrderRequest struct {
 
 type UpdateOrderItemRequest struct {
 	ID              int  `json:"id"`                                // ID của order item (0 nếu là item mới)
-	ProductID       *int `json:"product_id"`                        // Sản phẩm (nullable)
-	BomParentID     *int `json:"bom_parent_id"`                     // BOM Parent Product ID (nullable)
+	ProductID       *int `json:"product_id"`                        // Sản phẩm (có thể là direct product hoặc parent product từ BOM)
 	Quantity        int  `json:"quantity" binding:"required"`       // Số lượng
 	SellingPrice    int  `json:"selling_price" binding:"required"`  // Giá bán
 	OriginalPrice   int  `json:"original_price" binding:"required"` // Giá vốn
@@ -62,16 +61,14 @@ type OrderResponse struct {
 
 type OrderItemResponse struct {
 	ID              int              `json:"id"`
-	OrderID         int              `json:"order_id"`             // Đơn hàng
-	ProductID       *int             `json:"product_id"`           // Sản phẩm
-	BomParentID     *int             `json:"bom_parent_id"`        // BOM Parent Product ID
-	Quantity        int              `json:"quantity"`             // Số lượng
-	SellingPrice    int              `json:"selling_price"`        // Giá bán
-	OriginalPrice   int              `json:"original_price"`       // Giá vốn
-	DiscountPercent int              `json:"discount_percent"`     // Chiết khấu
-	FinalAmount     int              `json:"final_amount"`         // Tổng tiền
-	Product         *ProductResponse `json:"product,omitempty"`    // Thông tin sản phẩm
-	BomParent       *ProductResponse `json:"bom_parent,omitempty"` // Thông tin sản phẩm cha
+	OrderID         int              `json:"order_id"`          // Đơn hàng
+	ProductID       *int             `json:"product_id"`        // Sản phẩm (có thể là direct product hoặc parent product từ BOM)
+	Quantity        int              `json:"quantity"`          // Số lượng
+	SellingPrice    int              `json:"selling_price"`     // Giá bán
+	OriginalPrice   int              `json:"original_price"`    // Giá vốn
+	DiscountPercent int              `json:"discount_percent"`  // Chiết khấu
+	FinalAmount     int              `json:"final_amount"`      // Tổng tiền
+	Product         *ProductResponse `json:"product,omitempty"` // Thông tin sản phẩm
 }
 
 type GetAllOrdersResponse struct {

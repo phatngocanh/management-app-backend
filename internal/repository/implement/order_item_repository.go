@@ -19,8 +19,8 @@ func NewOrderItemRepository(db database.Db) repository.OrderItemRepository {
 }
 
 func (repo *OrderItemRepository) CreateCommand(ctx context.Context, item *entity.OrderItem, tx *sqlx.Tx) error {
-	insertQuery := `INSERT INTO order_items(order_id, product_id, bom_parent_id, quantity, selling_price, original_price, discount_percent, final_amount)
-					VALUES (:order_id, :product_id, :bom_parent_id, :quantity, :selling_price, :original_price, :discount_percent, :final_amount)`
+	insertQuery := `INSERT INTO order_items(order_id, product_id, quantity, selling_price, original_price, discount_percent, final_amount)
+					VALUES (:order_id, :product_id, :quantity, :selling_price, :original_price, :discount_percent, :final_amount)`
 
 	var err error
 
@@ -99,7 +99,7 @@ func (repo *OrderItemRepository) GetByOrderIDQuery(ctx context.Context, orderID 
 }
 
 func (repo *OrderItemRepository) UpdateCommand(ctx context.Context, item *entity.OrderItem, tx *sqlx.Tx) error {
-	updateQuery := `UPDATE order_items SET order_id = :order_id, product_id = :product_id, bom_parent_id = :bom_parent_id, 
+	updateQuery := `UPDATE order_items SET order_id = :order_id, product_id = :product_id, 
 					quantity = :quantity, selling_price = :selling_price, original_price = :original_price, 
 					discount_percent = :discount_percent, final_amount = :final_amount WHERE id = :id`
 

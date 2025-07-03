@@ -70,13 +70,10 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 		var materials []RequiredMaterial
 
 		if item.ProductID != nil {
-			// Direct product order
+			// Product order (can be direct product or parent product from BOM)
 			materials, err = s.calculateRequiredMaterialsForProduct(ctx, *item.ProductID, float64(item.Quantity), tx)
-		} else if item.BomParentID != nil {
-			// BOM parent product order - directly calculate materials for the parent product
-			materials, err = s.calculateRequiredMaterialsForProduct(ctx, *item.BomParentID, float64(item.Quantity), tx)
 		} else {
-			log.Error("OrderService.CreateOrder Error: order item must have either product_id or bom_parent_id")
+			log.Error("OrderService.CreateOrder Error: order item must have product_id")
 			return nil, error_utils.ErrorCode.BAD_REQUEST
 		}
 
@@ -98,8 +95,6 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 	}
 
 	fmt.Println("requiredMaterials", requiredMaterials)
-
-	return nil, error_utils.ErrorCode.DB_DOWN
 
 	// Lock the inventories to prevent concurrent access
 	inventories, err := s.inventoryRepo.SelectManyForUpdate(ctx, productIDs, tx)
@@ -153,7 +148,6 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 		orderItem := &entity.OrderItem{
 			OrderID:         order.ID,
 			ProductID:       itemRequest.ProductID,
-			BomParentID:     itemRequest.BomParentID,
 			Quantity:        itemRequest.Quantity,
 			SellingPrice:    itemRequest.SellingPrice,
 			OriginalPrice:   itemRequest.OriginalPrice,
