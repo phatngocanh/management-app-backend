@@ -139,3 +139,39 @@ func (repo *OrderRepository) GetByCustomerIDQuery(ctx context.Context, customerI
 
 	return orders, nil
 }
+
+func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, sortBy string, tx *sqlx.Tx) ([]entity.Order, error) {
+	var orders []entity.Order
+	query := "SELECT * FROM orders WHERE 1=1"
+	var args []interface{}
+
+	// Add customer filter
+	if customerID > 0 {
+		query += " AND customer_id = ?"
+		args = append(args, customerID)
+	}
+
+	// Add sorting
+	switch sortBy {
+	case "order_date_asc":
+		query += " ORDER BY order_date ASC"
+	case "order_date_desc":
+		query += " ORDER BY order_date DESC"
+	default:
+		query += " ORDER BY id DESC"
+	}
+
+	var err error
+	if tx != nil {
+		err = tx.SelectContext(ctx, &orders, query, args...)
+	} else {
+		err = repo.db.SelectContext(ctx, &orders, query, args...)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if orders == nil {
+		return []entity.Order{}, nil
+	}
+	return orders, nil
+}

@@ -57,3 +57,17 @@ type OrderItemResponse struct {
 type GetOneOrderResponse struct {
 	Order OrderResponse `json:"order"`
 }
+
+type UpdateOrderRequest struct {
+	ID                 int       `json:"id" binding:"required"` // Mã đơn hàng
+	CustomerID         int       `json:"customer_id"`           // Mã khách hàng
+	OrderDate          time.Time `json:"order_date"`            // Ngày đặt hàng
+	Note               *string   `json:"note"`                  // Ghi chú
+	AdditionalCost     *int      `json:"additional_cost"`       // Chi phí phát sinh thêm (VND)
+	AdditionalCostNote *string   `json:"additional_cost_note"`  // Ghi chú cho chi phí phát sinh
+	TaxPercent         *int      `json:"tax_percent"`           // Phần trăm thuế (%)
+}
+
+type GetAllOrdersResponse struct {
+	Orders []OrderResponse `json:"orders"`
+}

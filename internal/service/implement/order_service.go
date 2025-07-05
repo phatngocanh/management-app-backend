@@ -1,6 +1,7 @@
 package serviceimplement
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -165,7 +166,7 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 			return nil, error_utils.ErrorCode.NOT_FOUND
 		}
 		if inventory.Quantity < requiredQty {
-			log.Error(fmt.Sprintf("OrderService.CreateOrder Error: insufficient inventory for product ID %d: required %.3f, available %d",
+			log.Error(fmt.Sprintf("OrderService.CreateOrder Error: insufficient inventory for product ID %d: required %d, available %d",
 				productID, requiredQty, inventory.Quantity))
 			return nil, error_utils.ErrorCode.INVENTORY_QUANTITY_EXCEEDED
 		}
@@ -446,5 +447,98 @@ func (s *OrderService) GetOneOrder(ctx *gin.Context, id int) (model.GetOneOrderR
 		TotalProfitLossPercentage: &totalProfitLossPercentage,
 		TotalSalesRevenue:         order.TotalSalesRevenue,
 	}}
+	return resp, ""
+}
+
+func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest) string {
+	existing, err := s.orderRepo.GetOneByIDQuery(ctx, req.ID, nil)
+	if err != nil {
+		log.Error("OrderService.Update Error: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+	if existing == nil {
+		return error_utils.ErrorCode.NOT_FOUND
+	}
+
+	if req.CustomerID != 0 {
+		existing.CustomerID = req.CustomerID
+	}
+	if !req.OrderDate.IsZero() {
+		existing.OrderDate = req.OrderDate
+	}
+	if req.Note != nil {
+		existing.Note = req.Note
+	}
+	if req.AdditionalCost != nil {
+		existing.AdditionalCost = *req.AdditionalCost
+	}
+	if req.AdditionalCostNote != nil {
+		existing.AdditionalCostNote = req.AdditionalCostNote
+	}
+	if req.TaxPercent != nil {
+		existing.TaxPercent = *req.TaxPercent
+	}
+
+	err = s.orderRepo.UpdateCommand(ctx, existing, nil)
+	if err != nil {
+		log.Error("OrderService.Update Error when update order: " + err.Error())
+		return error_utils.ErrorCode.DB_DOWN
+	}
+
+	return ""
+}
+
+func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, sortBy string) (model.GetAllOrdersResponse, string) {
+	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, sortBy, nil)
+	if err != nil {
+		log.Error("OrderService.GetAll Error: " + err.Error())
+		return model.GetAllOrdersResponse{}, error_utils.ErrorCode.DB_DOWN
+	}
+
+	resp := model.GetAllOrdersResponse{Orders: make([]model.OrderResponse, 0, len(orders))}
+	for _, o := range orders {
+		// Fetch customer information
+		customer, err := s.customerRepo.GetOneByIDQuery(ctx, o.CustomerID, nil)
+		if err != nil {
+			log.Error("OrderService.GetAll Error fetching customer: " + err.Error())
+			continue
+		}
+
+		// Fetch order items to calculate total amount and product count
+		orderItems, err := s.orderItemRepo.GetAllByOrderIDQuery(ctx, o.ID, nil)
+		if err != nil {
+			log.Error("OrderService.GetAll Error fetching order items: " + err.Error())
+			continue
+		}
+		totalAmount, productCount := calculateOrderAmountsAndProductCount(orderItems)
+		totalAmount += o.AdditionalCost
+		totalAmount += int(float64(totalAmount) * float64(o.TaxPercent) / 100)
+		// Calculate profit/loss from stored cost and revenue values
+		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost + o.AdditionalCost
+		totalProfitLossPercentage := 0.0
+		if o.TotalOriginalCost > 0 {
+			totalProfitLossPercentage = float64(totalProfitLoss) / float64(o.TotalOriginalCost) * 100
+		}
+
+		resp.Orders = append(resp.Orders, model.OrderResponse{
+			ID:                 o.ID,
+			OrderDate:          o.OrderDate,
+			Note:               o.Note,
+			AdditionalCost:     o.AdditionalCost,
+			AdditionalCostNote: o.AdditionalCostNote,
+			Customer: model.CustomerResponse{
+				ID:      customer.ID,
+				Name:    customer.Name,
+				Phone:   customer.Phone,
+				Address: customer.Address,
+			},
+			OrderItems:                nil, // Omit order items in GetAll
+			TaxPercent:                o.TaxPercent,
+			TotalAmount:               &totalAmount,
+			ProductCount:              &productCount,
+			TotalProfitLoss:           &totalProfitLoss,
+			TotalProfitLossPercentage: &totalProfitLossPercentage,
+		})
+	}
 	return resp, ""
 }

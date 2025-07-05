@@ -84,3 +84,73 @@ func (h *OrderHandler) GetOneOrder(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
 }
+
+// @Summary Update Order
+// @Description Update an existing order
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Param  Authorization header string true "Authorization: Bearer"
+// @Param request body model.UpdateOrderRequest true "Updated order information"
+// @Success 200 {object} httpcommon.HttpResponse[any]
+// @Failure 400 {object} httpcommon.HttpResponse[any]
+// @Failure 404 {object} httpcommon.HttpResponse[any]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /orders/{orderId} [put]
+func (h *OrderHandler) Update(ctx *gin.Context) {
+	orderID, err := strconv.Atoi(ctx.Param("orderId"))
+	if err != nil {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "orderId")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	var request model.UpdateOrderRequest
+	if err := validation.BindJsonAndValidate(ctx, &request); err != nil {
+		return
+	}
+
+	request.ID = orderID
+	errCode := h.orderService.Update(ctx, request)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse[any](nil))
+}
+
+// @Summary Get All Orders
+// @Description Retrieve all orders with optional filters and sorting
+// @Tags Orders
+// @Produce json
+// @Param  Authorization header string true "Authorization: Bearer"
+// @Param customer_id query int false "Filter by customer ID"
+// @Param delivery_statuses query string false "Filter by delivery statuses (comma-separated, e.g., PENDING,DELIVERED)"
+// @Param sort_by query string false "Sort by: order_date_asc, order_date_desc (default: id DESC)"
+// @Success 200 {object} httpcommon.HttpResponse[model.GetAllOrdersResponse]
+// @Failure 500 {object} httpcommon.HttpResponse[any]
+// @Router /orders [get]
+func (h *OrderHandler) GetAll(ctx *gin.Context) {
+	// Get query parameters
+	customerIDStr := ctx.Query("customer_id")
+	sortBy := ctx.Query("sort_by")
+
+	// Parse customer ID if provided
+	customerID := 0
+	if customerIDStr != "" {
+		if id, err := strconv.Atoi(customerIDStr); err == nil {
+			customerID = id
+		}
+	}
+
+	response, errCode := h.orderService.GetAll(ctx, 0, customerID, sortBy)
+	if errCode != "" {
+		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
+		ctx.JSON(statusCode, errResponse)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpcommon.NewSuccessResponse(&response))
+}

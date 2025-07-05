@@ -104,6 +104,8 @@ func MapRoutes(router *gin.Engine,
 		{
 			orders.POST("", authMiddleware.VerifyAccessToken, orderHandler.CreateOrder)
 			orders.GET("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.GetOneOrder)
+			orders.PUT("/:orderId", authMiddleware.VerifyAccessToken, orderHandler.Update)
+			orders.GET("", authMiddleware.VerifyAccessToken, orderHandler.GetAll)
 		}
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
