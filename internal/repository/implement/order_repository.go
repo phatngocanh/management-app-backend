@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pna/management-app-backend/internal/database"
@@ -65,8 +66,8 @@ func (repo *OrderRepository) GetOneByIDQuery(ctx context.Context, id int, tx *sq
 
 func (repo *OrderRepository) CreateCommand(ctx context.Context, order *entity.Order, tx *sqlx.Tx) error {
 	// First insert without code (code will be generated after getting ID)
-	insertQuery := `INSERT INTO orders(code, customer_id, order_date, note, total_original_cost, total_sales_revenue, additional_cost, additional_cost_note, tax_percent) 
-					VALUES ('TEMP', :customer_id, :order_date, :note, :total_original_cost, :total_sales_revenue, :additional_cost, :additional_cost_note, :tax_percent)`
+	insertQuery := `INSERT INTO orders(code, customer_id, order_date, note, total_original_cost, total_sales_revenue, additional_cost, additional_cost_note, tax_percent, delivery_status) 
+					VALUES ('TEMP', :customer_id, :order_date, :note, :total_original_cost, :total_sales_revenue, :additional_cost, :additional_cost_note, :tax_percent, :delivery_status)`
 
 	var result sql.Result
 	var err error
@@ -108,7 +109,7 @@ func (repo *OrderRepository) UpdateCommand(ctx context.Context, order *entity.Or
 	updateQuery := `UPDATE orders SET customer_id = :customer_id, order_date = :order_date, note = :note, 
 					total_original_cost = :total_original_cost, total_sales_revenue = :total_sales_revenue, 
 					additional_cost = :additional_cost, additional_cost_note = :additional_cost_note, 
-					tax_percent = :tax_percent WHERE id = :id`
+					tax_percent = :tax_percent, delivery_status = :delivery_status WHERE id = :id`
 
 	if tx != nil {
 		_, err := tx.NamedExecContext(ctx, updateQuery, order)
@@ -140,7 +141,7 @@ func (repo *OrderRepository) GetByCustomerIDQuery(ctx context.Context, customerI
 	return orders, nil
 }
 
-func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, sortBy string, tx *sqlx.Tx) ([]entity.Order, error) {
+func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, customerID int, sortBy string, fromDate *time.Time, toDate *time.Time, tx *sqlx.Tx) ([]entity.Order, error) {
 	var orders []entity.Order
 	query := "SELECT * FROM orders WHERE 1=1"
 	var args []interface{}
@@ -149,6 +150,21 @@ func (repo *OrderRepository) GetAllWithFiltersQuery(ctx context.Context, custome
 	if customerID > 0 {
 		query += " AND customer_id = ?"
 		args = append(args, customerID)
+	}
+
+	// Add date range filter
+	if fromDate != nil {
+		// Set fromDate to start of day (00:00:00)
+		startOfDay := time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, fromDate.Location())
+		query += " AND order_date >= ?"
+		args = append(args, startOfDay)
+	}
+
+	if toDate != nil {
+		// Set toDate to end of day (23:59:59.999999999)
+		endOfDay := time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, 999999999, toDate.Location())
+		query += " AND order_date <= ?"
+		args = append(args, endOfDay)
 	}
 
 	// Add sorting

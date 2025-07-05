@@ -9,6 +9,7 @@ type CreateOrderRequest struct {
 	AdditionalCost     int                      `json:"additional_cost"`                // Chi phí phát sinh
 	AdditionalCostNote *string                  `json:"additional_cost_note"`           // Ghi chú chi phí phát sinh
 	TaxPercent         int                      `json:"tax_percent"`                    // Thuế suất
+	DeliveryStatus     string                   `json:"delivery_status"`                // Trạng thái giao hàng
 	Items              []CreateOrderItemRequest `json:"items" binding:"required,dive"`  // Danh sách sản phẩm trong đơn hàng
 }
 
@@ -27,12 +28,13 @@ type OrderResponse struct {
 	Note               *string             `json:"notes"`
 	AdditionalCost     int                 `json:"additional_cost"`
 	AdditionalCostNote *string             `json:"additional_cost_note"`
+	TaxPercent         int                 `json:"tax_percent"`
+	DeliveryStatus     string              `json:"delivery_status"`
 	Customer           CustomerResponse    `json:"customer"`
 	OrderItems         []OrderItemResponse `json:"order_items,omitempty"`
 	Images             []OrderImage        `json:"images,omitempty"`
 	TotalAmount        *int                `json:"total_amount,omitempty"`
 	ProductCount       *int                `json:"product_count,omitempty"`
-	TaxPercent         int                 `json:"tax_percent"`
 	// Profit/Loss fields for total order
 	TotalProfitLoss           *int     `json:"total_profit_loss,omitempty"`            // Total profit/loss for the order
 	TotalProfitLossPercentage *float64 `json:"total_profit_loss_percentage,omitempty"` // Total profit/loss percentage for the order
@@ -66,8 +68,11 @@ type UpdateOrderRequest struct {
 	AdditionalCost     *int      `json:"additional_cost"`       // Chi phí phát sinh thêm (VND)
 	AdditionalCostNote *string   `json:"additional_cost_note"`  // Ghi chú cho chi phí phát sinh
 	TaxPercent         *int      `json:"tax_percent"`           // Phần trăm thuế (%)
+	DeliveryStatus     *string   `json:"delivery_status"`       // Trạng thái giao hàng
 }
 
 type GetAllOrdersResponse struct {
-	Orders []OrderResponse `json:"orders"`
+	AllOrderTotalAmount     int             `json:"all_order_total_amount"`
+	AllOrderTotalProfitLoss int             `json:"all_order_total_profit_loss"`
+	Orders                  []OrderResponse `json:"orders"`
 }

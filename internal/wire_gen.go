@@ -65,7 +65,7 @@ func InitializeContainer(db database.Db) *controller.ApiContainer {
 	orderRepository := repositoryimplement.NewOrderRepository(db)
 	orderItemRepository := repositoryimplement.NewOrderItemRepository(db)
 	orderImageRepository := repositoryimplement.NewOrderImageRepository(db)
-	orderService := serviceimplement.NewOrderService(orderRepository, inventoryRepository, inventoryHistoryRepository, orderItemRepository, productRepository, productBomRepository, unitOfWork, userRepository, orderImageRepository, s3Service, customerRepository)
+	orderService := serviceimplement.NewOrderService(orderRepository, inventoryRepository, inventoryHistoryRepository, orderItemRepository, productRepository, productBomRepository, unitOfWork, userRepository, orderImageRepository, s3Service, customerRepository, unitOfMeasureRepository)
 	orderHandler := v1.NewOrderHandler(orderService)
 	server := http.NewServer(healthHandler, helloWorldHandler, authMiddleware, userHandler, productHandler, productBomHandler, productCategoryHandler, unitOfMeasureHandler, inventoryHandler, inventoryHistoryHandler, inventoryReceiptHandler, customerHandler, statisticsHandler, productImageHandler, orderHandler)
 	apiContainer := controller.NewApiContainer(server)

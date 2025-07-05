@@ -3,6 +3,7 @@ package v1
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pna/management-app-backend/internal/controller/http/middleware"
@@ -46,8 +47,21 @@ func (h *OrderHandler) CreateOrder(ctx *gin.Context) {
 
 	response, errorCode := h.orderService.CreateOrder(ctx, request, userID)
 	if errorCode != "" {
-		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errorCode, "")
-		ctx.JSON(statusCode, errResponse)
+		// Check for detailed error message from service
+		detailedMessage, exists := ctx.Get("detailed_error_message")
+		if exists && errorCode == error_utils.ErrorCode.INVENTORY_QUANTITY_EXCEEDED {
+			// Use detailed message for inventory shortage
+			statusCode := http.StatusBadRequest
+			errResponse := httpcommon.NewErrorResponse(httpcommon.Error{
+				Message: detailedMessage.(string),
+				Field:   "",
+				Code:    errorCode,
+			})
+			ctx.JSON(statusCode, errResponse)
+		} else {
+			statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errorCode, "")
+			ctx.JSON(statusCode, errResponse)
+		}
 		return
 	}
 
@@ -136,6 +150,8 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 	// Get query parameters
 	customerIDStr := ctx.Query("customer_id")
 	sortBy := ctx.Query("sort_by")
+	fromDateStr := ctx.Query("from_date")
+	toDateStr := ctx.Query("to_date")
 
 	// Parse customer ID if provided
 	customerID := 0
@@ -145,7 +161,31 @@ func (h *OrderHandler) GetAll(ctx *gin.Context) {
 		}
 	}
 
-	response, errCode := h.orderService.GetAll(ctx, 0, customerID, sortBy)
+	// Parse date filters
+	var fromDate *time.Time
+	var toDate *time.Time
+
+	if fromDateStr != "" {
+		if parsedDate, err := time.Parse("2006-01-02", fromDateStr); err == nil {
+			fromDate = &parsedDate
+		} else {
+			statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "from_date format should be YYYY-MM-DD")
+			ctx.JSON(statusCode, errResponse)
+			return
+		}
+	}
+
+	if toDateStr != "" {
+		if parsedDate, err := time.Parse("2006-01-02", toDateStr); err == nil {
+			toDate = &parsedDate
+		} else {
+			statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(error_utils.ErrorCode.BAD_REQUEST, "to_date format should be YYYY-MM-DD")
+			ctx.JSON(statusCode, errResponse)
+			return
+		}
+	}
+
+	response, errCode := h.orderService.GetAll(ctx, 0, customerID, sortBy, fromDate, toDate)
 	if errCode != "" {
 		statusCode, errResponse := error_utils.ErrorCodeToHttpResponse(errCode, "")
 		ctx.JSON(statusCode, errResponse)

@@ -2,6 +2,7 @@ package error_utils
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -21,6 +22,19 @@ type VersionMismatchError struct {
 }
 
 func (e *VersionMismatchError) Error() string {
+	return e.Message
+}
+
+// InsufficientInventoryError represents an inventory shortage with detailed information
+type InsufficientInventoryError struct {
+	Message string
+	Details []string
+}
+
+func (e *InsufficientInventoryError) Error() string {
+	if len(e.Details) > 0 {
+		return "Thiếu " + strings.Join(e.Details, ", ")
+	}
 	return e.Message
 }
 

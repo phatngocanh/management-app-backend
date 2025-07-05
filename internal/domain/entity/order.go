@@ -13,4 +13,19 @@ type Order struct {
 	AdditionalCost     int       `db:"additional_cost"`      // Chi phí phát sinh
 	AdditionalCostNote *string   `db:"additional_cost_note"` // Ghi chú chi phí phát sinh
 	TaxPercent         int       `db:"tax_percent"`          // Thuế suất
+	DeliveryStatus     string    `db:"delivery_status"`      // Trạng thái giao hàng
+}
+
+type orderDeliveryStatus struct {
+	PENDING   string
+	DELIVERED string
+	UNPAID    string
+	COMPLETED string
+}
+
+var OrderDeliveryStatus = orderDeliveryStatus{
+	PENDING:   "PENDING",
+	DELIVERED: "DELIVERED",
+	UNPAID:    "UNPAID",
+	COMPLETED: "COMPLETED",
 }

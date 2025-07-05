@@ -3,6 +3,8 @@ package serviceimplement
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +30,7 @@ type OrderService struct {
 	userRepo             repository.UserRepository
 	customerRepo         repository.CustomerRepository
 	orderImageRepo       repository.OrderImageRepository
+	unitRepo             repository.UnitOfMeasureRepository
 	s3Service            bean.S3Service
 }
 
@@ -43,6 +46,7 @@ func NewOrderService(
 	orderImageRepo repository.OrderImageRepository,
 	s3Service bean.S3Service,
 	customerRepo repository.CustomerRepository,
+	unitRepo repository.UnitOfMeasureRepository,
 ) service.OrderService {
 	return &OrderService{
 		orderRepo:            orderRepo,
@@ -55,8 +59,27 @@ func NewOrderService(
 		userRepo:             userRepo,
 		customerRepo:         customerRepo,
 		orderImageRepo:       orderImageRepo,
+		unitRepo:             unitRepo,
 		s3Service:            s3Service,
 	}
+}
+
+// formatNumberWithDots formats a number with dot separators (Vietnamese format)
+func formatNumberWithDots(num int) string {
+	str := strconv.Itoa(num)
+	if len(str) <= 3 {
+		return str
+	}
+
+	var result strings.Builder
+	for i, digit := range str {
+		if i > 0 && (len(str)-i)%3 == 0 {
+			result.WriteByte('.')
+		}
+		result.WriteRune(digit)
+	}
+
+	return result.String()
 }
 
 // RequiredMaterial represents the required quantity of a raw material
@@ -144,8 +167,6 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 		productIDs = append(productIDs, productID)
 	}
 
-	fmt.Println("requiredMaterials", requiredMaterials)
-
 	// Lock the inventories to prevent concurrent access
 	inventories, err := s.inventoryRepo.SelectManyForUpdate(ctx, productIDs, tx)
 	if err != nil {
@@ -159,6 +180,7 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 		inventoryMap[inventories[i].ProductID] = &inventories[i]
 	}
 
+	var insufficientItems []string
 	for productID, requiredQty := range requiredMaterials {
 		inventory, exists := inventoryMap[productID]
 		if !exists {
@@ -166,10 +188,34 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 			return nil, error_utils.ErrorCode.NOT_FOUND
 		}
 		if inventory.Quantity < requiredQty {
-			log.Error(fmt.Sprintf("OrderService.CreateOrder Error: insufficient inventory for product ID %d: required %d, available %d",
-				productID, requiredQty, inventory.Quantity))
-			return nil, error_utils.ErrorCode.INVENTORY_QUANTITY_EXCEEDED
+			// Get product details for detailed error message
+			product, err := s.productRepo.GetOneByIDQuery(ctx, productID, tx)
+			if err != nil || product == nil {
+				log.Error(fmt.Sprintf("OrderService.CreateOrder Error: failed to get product details for ID %d", productID))
+				return nil, error_utils.ErrorCode.DB_DOWN
+			}
+
+			shortage := requiredQty - inventory.Quantity
+			unitName := "đơn vị"
+
+			// Get unit name if available
+			if product.UnitID != nil {
+				unit, err := s.unitRepo.GetOneByIDQuery(ctx, *product.UnitID, tx)
+				if err == nil && unit != nil {
+					unitName = unit.Name
+				}
+			}
+
+			insufficientItems = append(insufficientItems, fmt.Sprintf("%s %s %s (tồn kho %s %s)", formatNumberWithDots(shortage), unitName, product.Name, formatNumberWithDots(inventory.Quantity), unitName))
 		}
+	}
+
+	if len(insufficientItems) > 0 {
+		detailedMessage := "Thiếu " + strings.Join(insufficientItems, ", ")
+
+		// Store detailed error message in context for handler to access
+		ctx.Set("detailed_error_message", detailedMessage)
+		return nil, error_utils.ErrorCode.INVENTORY_QUANTITY_EXCEEDED
 	}
 
 	// Create the order
@@ -182,6 +228,7 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 		AdditionalCost:     orderRequest.AdditionalCost,
 		AdditionalCostNote: orderRequest.AdditionalCostNote,
 		TaxPercent:         orderRequest.TaxPercent,
+		DeliveryStatus:     orderRequest.DeliveryStatus,
 	}
 
 	err = s.orderRepo.CreateCommand(ctx, order, tx)
@@ -233,7 +280,7 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 	// Deduct inventory for all required materials
 	for productID, requiredQty := range requiredMaterials {
 		inventory := inventoryMap[productID]
-		newQuantity := inventory.Quantity - int(requiredQty)
+		newQuantity := inventory.Quantity - requiredQty
 
 		uuid := uuid.New()
 		err = s.inventoryRepo.UpdateQuantityCommand(ctx, productID, newQuantity, uuid.String(), tx)
@@ -260,16 +307,16 @@ func (s *OrderService) CreateOrder(ctx *gin.Context, orderRequest model.CreateOr
 
 	}
 
+	customer, err := s.customerRepo.GetOneByIDQuery(ctx, order.CustomerID, tx)
+	if err != nil {
+		log.Error("OrderService.CreateOrder Error when get customer: " + err.Error())
+		return nil, error_utils.ErrorCode.DB_DOWN
+	}
+
 	// Commit transaction
 	err = s.unitOfWork.Commit(tx)
 	if err != nil {
 		log.Error("OrderService.CreateOrder Error when commit transaction: " + err.Error())
-		return nil, error_utils.ErrorCode.DB_DOWN
-	}
-
-	customer, err := s.customerRepo.GetOneByIDQuery(ctx, order.CustomerID, tx)
-	if err != nil {
-		log.Error("OrderService.CreateOrder Error when get customer: " + err.Error())
 		return nil, error_utils.ErrorCode.DB_DOWN
 	}
 
@@ -431,6 +478,8 @@ func (s *OrderService) GetOneOrder(ctx *gin.Context, id int) (model.GetOneOrderR
 		Note:               order.Note,
 		AdditionalCost:     order.AdditionalCost,
 		AdditionalCostNote: order.AdditionalCostNote,
+		TaxPercent:         order.TaxPercent,
+		DeliveryStatus:     order.DeliveryStatus,
 		Customer: model.CustomerResponse{
 			ID:      customer.ID,
 			Name:    customer.Name,
@@ -441,7 +490,6 @@ func (s *OrderService) GetOneOrder(ctx *gin.Context, id int) (model.GetOneOrderR
 		Images:       imageResponses,
 		TotalAmount:  &totalAmount,
 		ProductCount: &productCount,
-		TaxPercent:   order.TaxPercent,
 		// Profit/Loss fields for total order
 		TotalProfitLoss:           &totalProfitLoss,
 		TotalProfitLossPercentage: &totalProfitLossPercentage,
@@ -478,6 +526,9 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	if req.TaxPercent != nil {
 		existing.TaxPercent = *req.TaxPercent
 	}
+	if req.DeliveryStatus != nil {
+		existing.DeliveryStatus = *req.DeliveryStatus
+	}
 
 	err = s.orderRepo.UpdateCommand(ctx, existing, nil)
 	if err != nil {
@@ -488,12 +539,15 @@ func (s *OrderService) Update(ctx context.Context, req model.UpdateOrderRequest)
 	return ""
 }
 
-func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, sortBy string) (model.GetAllOrdersResponse, string) {
-	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, sortBy, nil)
+func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, sortBy string, fromDate *time.Time, toDate *time.Time) (model.GetAllOrdersResponse, string) {
+	orders, err := s.orderRepo.GetAllWithFiltersQuery(ctx, customerID, sortBy, fromDate, toDate, nil)
 	if err != nil {
 		log.Error("OrderService.GetAll Error: " + err.Error())
 		return model.GetAllOrdersResponse{}, error_utils.ErrorCode.DB_DOWN
 	}
+
+	allOrderTotalAmount := 0
+	allOrderTotalProfitLoss := 0
 
 	resp := model.GetAllOrdersResponse{Orders: make([]model.OrderResponse, 0, len(orders))}
 	for _, o := range orders {
@@ -515,6 +569,10 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, s
 		totalAmount += int(float64(totalAmount) * float64(o.TaxPercent) / 100)
 		// Calculate profit/loss from stored cost and revenue values
 		totalProfitLoss := o.TotalSalesRevenue - o.TotalOriginalCost + o.AdditionalCost
+
+		allOrderTotalAmount += totalAmount
+		allOrderTotalProfitLoss += totalProfitLoss
+
 		totalProfitLossPercentage := 0.0
 		if o.TotalOriginalCost > 0 {
 			totalProfitLossPercentage = float64(totalProfitLoss) / float64(o.TotalOriginalCost) * 100
@@ -526,6 +584,8 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, s
 			Note:               o.Note,
 			AdditionalCost:     o.AdditionalCost,
 			AdditionalCostNote: o.AdditionalCostNote,
+			TaxPercent:         o.TaxPercent,
+			DeliveryStatus:     o.DeliveryStatus,
 			Customer: model.CustomerResponse{
 				ID:      customer.ID,
 				Name:    customer.Name,
@@ -533,12 +593,15 @@ func (s *OrderService) GetAll(ctx context.Context, userID int, customerID int, s
 				Address: customer.Address,
 			},
 			OrderItems:                nil, // Omit order items in GetAll
-			TaxPercent:                o.TaxPercent,
 			TotalAmount:               &totalAmount,
 			ProductCount:              &productCount,
 			TotalProfitLoss:           &totalProfitLoss,
 			TotalProfitLossPercentage: &totalProfitLossPercentage,
 		})
 	}
+
+	resp.AllOrderTotalAmount = allOrderTotalAmount
+	resp.AllOrderTotalProfitLoss = allOrderTotalProfitLoss
+
 	return resp, ""
 }
